@@ -1,0 +1,10 @@
+"figure","width_inches","height_inches"
+"library_size",8,5
+"gene_detection",8,5
+"pca",8,6
+"pca_flagged_samples",8,6
+"volcano_labelled",11,7
+"labelled_gene_counts",14,7
+"egfr_distribution",7,5
+"sensitivity_lfc_agreement",12,7
+"go_biological_process",12,11

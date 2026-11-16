@@ -1,0 +1,3 @@
+"diagnosis","n_samples","n_missing","n_infinite","n_negative","n_available","minimum","lower_quartile","median","upper_quartile","maximum"
+"Control",22,0,0,0,22,60,86.425,96,104.25,123
+"IgAN",43,0,0,0,43,46.8,75.25,88.2,105.75,133.8

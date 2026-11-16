@@ -1,0 +1,17 @@
+"direction","ID","Description","Count","extracted_genes"
+"Higher in IgAN","GO:0002250","adaptive immune response",208,208
+"Higher in IgAN","GO:0002252","immune effector process",182,182
+"Higher in IgAN","GO:0002521","leukocyte differentiation",142,142
+"Higher in IgAN","GO:0032943","mononuclear cell proliferation",74,74
+"Higher in IgAN","GO:0042113","B cell activation",77,77
+"Higher in IgAN","GO:0046651","lymphocyte proliferation",74,74
+"Higher in IgAN","GO:0050851","antigen receptor-mediated signaling pathway",76,76
+"Higher in IgAN","GO:0050865","regulation of cell activation",148,148
+"Lower in IgAN","GO:0006119","oxidative phosphorylation",87,87
+"Lower in IgAN","GO:0007005","mitochondrion organization",126,126
+"Lower in IgAN","GO:0015986","proton motive force-driven ATP synthesis",57,57
+"Lower in IgAN","GO:0032543","mitochondrial translation",79,79
+"Lower in IgAN","GO:0033108","mitochondrial respiratory chain complex assembly",57,57
+"Lower in IgAN","GO:0140053","mitochondrial gene expression",85,85
+"Lower in IgAN","GO:1901740","negative regulation of myoblast fusion",37,37
+"Lower in IgAN","GO:1902600","proton transmembrane transport",89,89

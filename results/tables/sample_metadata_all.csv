@@ -1,0 +1,91 @@
+"sample_id","title","diagnosis","technical_outlier","egfr"
+"GSM5345902","IgAN_sample1","IgAN","No",76.6
+"GSM5345903","IgAN_sample2","IgAN","No",68.8
+"GSM5345904","IgAN_sample3","IgAN","No",70.5
+"GSM5345905","IgAN_sample4","IgAN","No",46.8
+"GSM5345906","IgAN_sample5","IgAN","No",63
+"GSM5345907","IgAN_sample6","IgAN","No",114.8
+"GSM5345908","IgAN_sample7","IgAN","No",77
+"GSM5345909","IgAN_sample8","IgAN","No",81.1
+"GSM5345910","IgAN_sample9","IgAN","No",70.5
+"GSM5345911","IgAN_sample10","IgAN","Outlier_excluded from main analysis",58.1
+"GSM5345912","IgAN_sample11","IgAN","No",67.1
+"GSM5345913","IgAN_sample12","IgAN","No",77.7
+"GSM5345914","IgAN_sample13","IgAN","No",64.6
+"GSM5345915","IgAN_sample14","IgAN","No",74.8
+"GSM5345916","IgAN_sample15","IgAN","No",68.3
+"GSM5345917","IgAN_sample16","IgAN","No",104.5
+"GSM5345918","IgAN_sample17","IgAN","No",85.3
+"GSM5345919","IgAN_sample18","IgAN","Outlier_excluded from main analysis",79.2
+"GSM5345920","IgAN_sample19","IgAN","No",76.6
+"GSM5345921","IgAN_sample20","IgAN","Outlier_excluded from main analysis",78.9
+"GSM5345922","IgAN_sample21","IgAN","No",75.7
+"GSM5345923","IgAN_sample22","IgAN","No",104.8
+"GSM5345924","IgAN_sample23","IgAN","No",84
+"GSM5345925","IgAN_sample24","IgAN","No",101.5
+"GSM5345926","IgAN_sample25","IgAN","No",128.6
+"GSM5345927","IgAN_sample26","IgAN","No",60
+"GSM5345928","IgAN_sample27","IgAN","No",112.4
+"GSM5345929","IgAN_sample28","IgAN","No",74.4
+"GSM5345930","IgAN_sample29","IgAN","No",88.2
+"GSM5345931","IgAN_sample30","IgAN","No",100.4
+"GSM5345932","IgAN_sample31","IgAN","No",97.8
+"GSM5345933","IgAN_sample32","IgAN","No",81.6
+"GSM5345934","IgAN_sample33","IgAN","No",93.3
+"GSM5345935","IgAN_sample34","IgAN","No",89.5
+"GSM5345936","IgAN_sample35","IgAN","No",118
+"GSM5345937","IgAN_sample36","IgAN","No",124
+"GSM5345938","IgAN_sample37","IgAN","No",102.1
+"GSM5345939","IgAN_sample38","IgAN","No",102.9
+"GSM5345940","IgAN_sample39","IgAN","No",88.1
+"GSM5345941","IgAN_sample40","IgAN","No",106.7
+"GSM5345942","IgAN_sample41","IgAN","No",104.3
+"GSM5345943","IgAN_sample42","IgAN","No",114.3
+"GSM5345944","IgAN_sample43","IgAN","No",133.8
+"GSM5345945","IgAN_sample44","IgAN","No",120.2
+"GSM5345946","IgAN_sample45","IgAN","No",132.4
+"GSM5345947","IgAN_sample46","IgAN","No",109.6
+"GSM5345948","Control_sample47","Control","No",60
+"GSM5345949","Control_sample48","Control","No",109
+"GSM5345950","Control_sample49","Control","No",113
+"GSM5345951","Control_sample50","Control","No",76
+"GSM5345952","Control_sample51","Control","No",86
+"GSM5345953","Control_sample52","Control","No",83
+"GSM5345954","Control_sample53","Control","No",97
+"GSM5345955","Control_sample54","Control","No",105
+"GSM5345956","Control_sample55","Control","No",93
+"GSM5345957","Control_sample56","Control","No",102
+"GSM5345958","Control_sample57","Control","No",101
+"GSM5345959","Control_sample58","Control","No",95
+"GSM5345960","Control_sample59","Control","No",109
+"GSM5345961","Control_sample60","Control","No",95
+"GSM5345962","Control_sample61","Control","No",123
+"GSM5345963","Control_sample62","Control","No",102
+"GSM5345964","Control_sample63","Control","No",111
+"GSM5345965","Control_sample64","Control","No",85
+"GSM5345966","Control_sample65","Control","No",87.7
+"GSM5345967","Control_sample66","Control","No",97.9
+"GSM5345968","Control_sample67","Control","No",90.8
+"GSM5345969","Control_sample68","Control","No",85.6
+"GSM5345970","Diabetic nephropathy_sample69","Diabetic nephropathy","No",57.5
+"GSM5345971","Diabetic nephropathy_sample70","Diabetic nephropathy","No",84.2
+"GSM5345972","Diabetic nephropathy_sample71","Diabetic nephropathy","No",99.6
+"GSM5345973","FSGS_sample72","FSGS","No",120
+"GSM5345974","FSGS_sample73","FSGS","No",40.5
+"GSM5345975","FSGS_sample74","FSGS","No",81.5
+"GSM5345976","Lupus nephritis_sample75","Lupus nephritis","No",139.7
+"GSM5345977","Lupus nephritis_sample76","Lupus nephritis","No",126.2
+"GSM5345978","Lupus nephritis_sample77","Lupus nephritis","No",126.3
+"GSM5345979","Membranous nephropathy_sample78","Membranous nephropathy","No",83.4
+"GSM5345980","Membranous nephropathy_sample79","Membranous nephropathy","No",95.3
+"GSM5345981","Membranous nephropathy_sample80","Membranous nephropathy","No",115.8
+"GSM5345982","Membranous nephropathy_sample81","Membranous nephropathy","No",99.7
+"GSM5345983","minimal change disease_sample82","minimal change disease","No",78.1
+"GSM5345984","minimal change disease_sample83","minimal change disease","No",61.9
+"GSM5345985","minimal change disease_sample84","minimal change disease","No",98.5
+"GSM5345986","minimal change disease_sample85","minimal change disease","No",135.4
+"GSM5345987","minimal change disease_sample86","minimal change disease","No",106.9
+"GSM5345988","minimal change disease_sample87","minimal change disease","No",126.2
+"GSM5345989","minimal change disease_sample88","minimal change disease","No",68.9
+"GSM5345990","minimal change disease_sample89","minimal change disease","No",56.1
+"GSM5345991","minimal change disease_sample90","minimal change disease","No",48.9

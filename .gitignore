@@ -1,0 +1,11 @@
+# Recreated R objects and local session state
+*.rds
+.RData
+.Rhistory
+
+# Local backups and verification intermediates
+results-before-fresh-run/
+reproducibility/**/previous_results/
+reproducibility/**/documentation_before_status_update/
+*_backup_*.docx
+~$*

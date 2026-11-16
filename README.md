@@ -4,6 +4,9 @@
 **Dataset:** GSE175759  
 **Documentation updated:** 16 November 2026
 
+[Final report (PDF)](Final_Writeup.pdf) · [Editable report](Final_Writeup.docx) ·
+[Submission details](SUBMISSION.md)
+
 This project examines gene-expression differences between IgA nephropathy
 (IgAN) and control kidney tubulointerstitial samples. It includes sample quality
 control, DESeq2 differential-expression analysis, an eGFR-adjusted sensitivity
@@ -45,8 +48,8 @@ above appear after the corresponding notebook chunks run.
 Open the [GSE175759 GEO record](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE175759)
 and download the supplementary count archive `GSE175759_RAW.tar` and the series
 matrix metadata file `GSE175759_series_matrix.txt.gz`. Place both files in
-`data/raw/`, retaining their names and compression. These two files are already
-present in the current local project folder.
+`data/raw/`, retaining their names and compression. Both original files are included in this repository under `data/raw/`.
+The GEO download instructions also provide an independent way to obtain them.
 
 The notebook extracts the archive into `data/counts/`, combines the sample count
 files, and matches their GEO accessions to the metadata. The original count
@@ -235,7 +238,8 @@ See the [validation report](reproducibility/fresh_run_2026-11-16/README.md),
 [table comparisons](reproducibility/fresh_run_2026-11-16/table_comparison.csv),
 and [model checks](reproducibility/fresh_run_2026-11-16/model_object_comparison.csv).
 That folder also contains execution logs, input/source hashes, comparison
-scripts, and the pre-run outputs in `previous_results/`. Refreshed outputs are
+scripts. The large pre-run backup (`previous_results/`) is retained locally
+and is intentionally excluded from this repository. Refreshed outputs are
 in `results/`, and the complete rendered notebook is
 [BE5350_Final_Proejct.html](BE5350_Final_Proejct.html).
 

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "applicable": true,
+  "auditable": true,
+  "verdict": "PASS",
+  "backend": "r-grid",
+  "summary": {
+    "fail": 0,
+    "warn": 0,
+    "comparisons": 2,
+    "exemptions": 0
+  },
+  "tolerances": {
+    "alignment_pt": 1.5,
+    "gutter_pt": 1.5
+  },
+  "layout": {
+    "schema_version": 1,
+    "backend": "r-grid",
+    "figure": {
+      "width_pt": 504.0,
+      "height_pt": 576.0
+    },
+    "panels": [
+      {
+        "id": "a",
+        "bbox_pt": [
+          144.0665,
+          370.8981,
+          384.0661,
+          534.323
+        ]
+      },
+      {
+        "id": "b",
+        "bbox_pt": [
+          144.0665,
+          182.3685,
+          384.0661,
+          325.9076
+        ]
+      },
+      {
+        "id": "c",
+        "bbox_pt": [
+          144.0665,
+          31.7428,
+          384.0661,
+          175.2819
+        ]
+      }
+    ],
+    "row_groups": [],
+    "column_groups": [
+      {
+        "id": "column-1",
+        "panels": [
+          "a",
+          "b"
+        ]
+      },
+      {
+        "id": "column-2",
+        "panels": [
+          "b",
+          "c"
+        ]
+      }
+    ],
+    "boundary_groups": [],
+    "exemptions": []
+  },
+  "findings": []
+}

@@ -1,0 +1,96 @@
+{
+  "pdf": "work\\fresh_run_2026-11-16\\project_utf8\\results\\figures\\Figure1_volcano_GO.pdf",
+  "auditable": true,
+  "verdict": "REVIEW REQUIRED",
+  "page_count": 1,
+  "visible_text_box_count": 61,
+  "text_trace_count": 61,
+  "stroke_path_count": 18823,
+  "filled_region_count": 18796,
+  "image_region_count": 1,
+  "summary": {
+    "fail": 0,
+    "warn": 3,
+    "contained_fill_overlays": 20,
+    "contained_image_overlays": 0
+  },
+  "thresholds": {
+    "text_inset_pt": 0.6,
+    "min_overlap_ratio": 0.05,
+    "clipping_tolerance_pt": 0.5
+  },
+  "findings": [
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "Higher in IgAN",
+      "text_bbox": [
+        175.8699951171875,
+        25.190914154052734,
+        227.885986328125,
+        33.190914154052734
+      ],
+      "other_text": null,
+      "other_bbox": [
+        154.11000061035156,
+        24.33001708984375,
+        380.6600036621094,
+        32.83001708984375
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        18786000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "Lower in IgAN",
+      "text_bbox": [
+        254.1300048828125,
+        25.190914154052734,
+        304.1700134277344,
+        33.190914154052734
+      ],
+      "other_text": null,
+      "other_bbox": [
+        154.11000061035156,
+        24.33001708984375,
+        380.6600036621094,
+        32.83001708984375
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        18786000
+      ]
+    },
+    {
+      "severity": "WARN",
+      "kind": "text-fill-edge",
+      "page": 1,
+      "message": "Text partially overlaps the edge of 1 filled region(s)",
+      "text": "Not significant",
+      "text_bbox": [
+        330.4200134277344,
+        25.190914154052734,
+        380.6600036621094,
+        33.190914154052734
+      ],
+      "other_text": null,
+      "other_bbox": [
+        154.11000061035156,
+        24.33001708984375,
+        380.6600036621094,
+        32.83001708984375
+      ],
+      "object_count": 1,
+      "object_indexes": [
+        18786000
+      ]
+    }
+  ]
+}

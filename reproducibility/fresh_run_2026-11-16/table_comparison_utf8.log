@@ -1,0 +1,36 @@
+[1] file                    rows                    columns                
+[4] same_shape              exact_values            equal_tolerance_1e_8   
+[7] max_absolute_difference
+<0 rows> (or 0-length row.names)
+CSV tables: 52 Exact: 52 Within tolerance: 52 
+
+ gene_filtering_summary.csv 
+  genes_before genes_retained genes_removed minimum_count minimum_samples
+1        57820          18756         39064            10              22
+
+ primary_count_replacement_summary.csv 
+  changed_counts genes_with_changed_counts samples_with_changed_counts
+1             65                        53                          27
+
+ sensitivity_significance_counts.csv 
+  significance_status number_of_genes
+1             Neither           12436
+2 Significant in both            5925
+3     Unadjusted only             244
+4  eGFR-adjusted only             151
+
+ sensitivity_agreement.csv 
+  genes_plotted pearson_r median_absolute_difference
+1         18756 0.9980354                0.008424732
+
+ go_enrichment_summary.csv 
+       direction submitted_genes returned_terms significant_terms
+1 Higher in IgAN            2626           5109               250
+2  Lower in IgAN            2919           5125               150
+
+ go_redundancy_summary.csv 
+       direction significant_terms representative_terms
+1 Higher in IgAN               250                   82
+2  Lower in IgAN               150                   59
+
+Primary significant higher/lower: 2897 3270 

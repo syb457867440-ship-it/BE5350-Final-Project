@@ -1,0 +1,49 @@
+"check","passed"
+"primary gene_ids",TRUE
+"primary sample_ids",TRUE
+"primary metadata",TRUE
+"primary size_factors",TRUE
+"primary dispersions",TRUE
+"primary convergence",TRUE
+"primary assay_names",TRUE
+"primary assay counts",TRUE
+"primary assay mu",TRUE
+"primary assay H",TRUE
+"primary assay cooks",TRUE
+"primary assay replaceCounts",TRUE
+"primary assay replaceCooks",TRUE
+"sensitivity_unadjusted gene_ids",TRUE
+"sensitivity_unadjusted sample_ids",TRUE
+"sensitivity_unadjusted metadata",TRUE
+"sensitivity_unadjusted size_factors",TRUE
+"sensitivity_unadjusted dispersions",TRUE
+"sensitivity_unadjusted convergence",TRUE
+"sensitivity_unadjusted assay_names",TRUE
+"sensitivity_unadjusted assay counts",TRUE
+"sensitivity_unadjusted assay mu",TRUE
+"sensitivity_unadjusted assay H",TRUE
+"sensitivity_unadjusted assay cooks",TRUE
+"sensitivity_egfr gene_ids",TRUE
+"sensitivity_egfr sample_ids",TRUE
+"sensitivity_egfr metadata",TRUE
+"sensitivity_egfr size_factors",TRUE
+"sensitivity_egfr dispersions",TRUE
+"sensitivity_egfr convergence",TRUE
+"sensitivity_egfr assay_names",TRUE
+"sensitivity_egfr assay counts",TRUE
+"sensitivity_egfr assay mu",TRUE
+"sensitivity_egfr assay H",TRUE
+"sensitivity_egfr assay cooks",TRUE
+"VST matrix",TRUE
+"primary_results",TRUE
+"primary_shrunken",TRUE
+"sensitivity_unadjusted_results",TRUE
+"sensitivity_egfr_results",TRUE
+"GO higher",TRUE
+"GO lower",TRUE
+"GO higher_simplified",TRUE
+"GO lower_simplified",TRUE
+"GO background",TRUE
+"GO higher_ids",TRUE
+"GO lower_ids",TRUE
+"GO mapping",TRUE

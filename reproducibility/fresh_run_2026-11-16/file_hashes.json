@@ -1,0 +1,467 @@
+[
+  {
+    "file": "README.txt",
+    "previous_sha256": "c12d7fa33d37a69b293c9ce2da5944ea51a25469b61d0cab90173a881af56cd4",
+    "fresh_sha256": "1ef10b528cf19509ba3e21d43f93b10ba92d37b021dbad070602dec75c03ca11"
+  },
+  {
+    "file": "sessionInfo.txt",
+    "previous_sha256": "c1697a4339fe9a3e1bfe2c4cdb0c26254b59d38cb8bf47d65c23837c6d6f39c5",
+    "fresh_sha256": "d7079bbcabbb76ee9a79297d111ce5902e9cb554eb1624d968873d20182edd36"
+  },
+  {
+    "file": "figures/egfr_distribution.pdf",
+    "previous_sha256": "c795c99fc786b3a9f2deef508b958582283a24d48ee5c29c8e3aef34d17a5550",
+    "fresh_sha256": "4d89d986a84d5ebf266900ae546d36550257d8a542a82dbc961679b1a4bcf595"
+  },
+  {
+    "file": "figures/egfr_distribution.png",
+    "previous_sha256": "cc54f24bdbe128947ad9e3fa7c75674514b6db9dc45a7f1a3fbd6231f576ed4d",
+    "fresh_sha256": "cc54f24bdbe128947ad9e3fa7c75674514b6db9dc45a7f1a3fbd6231f576ed4d"
+  },
+  {
+    "file": "figures/Figure1_caption.md",
+    "previous_sha256": "256f053cadc60e12fd18d21abc210b96a76603a0ba611b211502ea33eca26045",
+    "fresh_sha256": null
+  },
+  {
+    "file": "figures/Figure1_volcano_GO.pdf",
+    "previous_sha256": "296714036b315735e4e18c345dbbe12876676f035b6e38c66ecfc3df3cf3dfd1",
+    "fresh_sha256": "e474fb2045dd73d84028b1d996a5815eab1a392c323efcafd8aeacc8e0017695"
+  },
+  {
+    "file": "figures/Figure1_volcano_GO.png",
+    "previous_sha256": "99073b5b40adf4321df77df898f291bc1f5ce0d999db5adb65fa9afefb5c3bb6",
+    "fresh_sha256": "99073b5b40adf4321df77df898f291bc1f5ce0d999db5adb65fa9afefb5c3bb6"
+  },
+  {
+    "file": "figures/Figure1_volcano_GO.svg",
+    "previous_sha256": "57d3a6d461dae1d3068ffc49e3adbf8e9d5ebe0bea915355016bfdaa5bd61376",
+    "fresh_sha256": "57d3a6d461dae1d3068ffc49e3adbf8e9d5ebe0bea915355016bfdaa5bd61376"
+  },
+  {
+    "file": "figures/gene_detection.pdf",
+    "previous_sha256": "50eb1a92a6b98b7f6b1c2c4659523ccc62baa2f635a4dd95642b20694118b597",
+    "fresh_sha256": "d35719032f7fd663c3377122575ffdd2c92f1a5168edb8c27cd8e927cd4148c9"
+  },
+  {
+    "file": "figures/gene_detection.png",
+    "previous_sha256": "1d6f7688471d09d71666456d52743737edc2778b15867f36cc092d67cb2e6920",
+    "fresh_sha256": "1d6f7688471d09d71666456d52743737edc2778b15867f36cc092d67cb2e6920"
+  },
+  {
+    "file": "figures/go_biological_process.pdf",
+    "previous_sha256": "e2aa5b47e81b3b9cff4c9b535c9f57a175d7536fdd2755a8ab50c6d91907c1a5",
+    "fresh_sha256": "4a101e1a9cf92be3a5c6965c9c3c21b05ff0e9f640232e02e289339c53d34444"
+  },
+  {
+    "file": "figures/go_biological_process.png",
+    "previous_sha256": "c06a8a6da95535506ae801c6fad8b50892c63da6512b982d210a2385a2aa64d7",
+    "fresh_sha256": "c06a8a6da95535506ae801c6fad8b50892c63da6512b982d210a2385a2aa64d7"
+  },
+  {
+    "file": "figures/labelled_gene_counts.pdf",
+    "previous_sha256": "8c0376f3aaeec66024d3465d28e6fc6bd8b12d3edd263281f04de107b80606f1",
+    "fresh_sha256": "185594dae6233144dd7d3a866b476a82b022fa58476766cd5437371732722a09"
+  },
+  {
+    "file": "figures/labelled_gene_counts.png",
+    "previous_sha256": "903ae5b939feae9a7f9e9b79e107e0f3439e231b9aebcf3a8bff388d0d621a4c",
+    "fresh_sha256": "903ae5b939feae9a7f9e9b79e107e0f3439e231b9aebcf3a8bff388d0d621a4c"
+  },
+  {
+    "file": "figures/library_size.pdf",
+    "previous_sha256": "7b9c720131c81fa4a50865ae5d48e6860ff7ce97b561b8147365bfaf1503f5fd",
+    "fresh_sha256": "0686a151e2919ae3d33d31ebbdc18cccf461b2189829b0c8cb69575b946468b1"
+  },
+  {
+    "file": "figures/library_size.png",
+    "previous_sha256": "0d9507cca84edcf686520fe4daec8d3e79f88eda4b0a1f504d12dbe68da07ad9",
+    "fresh_sha256": "0d9507cca84edcf686520fe4daec8d3e79f88eda4b0a1f504d12dbe68da07ad9"
+  },
+  {
+    "file": "figures/ma_apeglm.pdf",
+    "previous_sha256": "3dac6074730f94f7bcf77868946247e05c41d64b785fb072b6a36c961a788e59",
+    "fresh_sha256": "2f419a9951dff7b652fb3a6e721e2f0dc7fc36b9982510304d8b7009905547f5"
+  },
+  {
+    "file": "figures/ma_apeglm.png",
+    "previous_sha256": "84dceb7cd63a20856255e28e33f35bc8990e931e22952848bfff7ee90807d321",
+    "fresh_sha256": "84dceb7cd63a20856255e28e33f35bc8990e931e22952848bfff7ee90807d321"
+  },
+  {
+    "file": "figures/ma_unshrunken.pdf",
+    "previous_sha256": "f81c1d65faaeddde877890e28ad323bdb6be621b3663bde19c44ef537abcd772",
+    "fresh_sha256": "693fbb8a908f76fb1487ab5ee06685b554a58d6504947df31c7d226e272e966c"
+  },
+  {
+    "file": "figures/ma_unshrunken.png",
+    "previous_sha256": "17022b42e99f51f7fde150e32cf80186c6837e22fb89e97983a2e7d4a170ef7c",
+    "fresh_sha256": "17022b42e99f51f7fde150e32cf80186c6837e22fb89e97983a2e7d4a170ef7c"
+  },
+  {
+    "file": "figures/pca.pdf",
+    "previous_sha256": "b962aa769f4f9f72151354d64a13eda57ca11941383e4ce121b85d74622e8265",
+    "fresh_sha256": "95ed42d07811cf5a3971cbd75f8f0de21bd8bb32f3f1d640327695512ddb9aab"
+  },
+  {
+    "file": "figures/pca.png",
+    "previous_sha256": "64b67866605710eee200c853b62d5dbc8b9ccfa0b8c52f74768522d3532c7725",
+    "fresh_sha256": "64b67866605710eee200c853b62d5dbc8b9ccfa0b8c52f74768522d3532c7725"
+  },
+  {
+    "file": "figures/pca_flagged_samples.pdf",
+    "previous_sha256": "daaed8ccb8c70c401276fb8f710c1061fbbb633058a90ba3822ed4a2d4313a48",
+    "fresh_sha256": "8b5ebd294448cbd555ef78de2ec8a81b8b06c61394b248f781dce4e5e36dfd9f"
+  },
+  {
+    "file": "figures/pca_flagged_samples.png",
+    "previous_sha256": "36617dbbc86247871b309246cd9d8e4171e85ce69a59a38b2b5a3fbc6f431527",
+    "fresh_sha256": "36617dbbc86247871b309246cd9d8e4171e85ce69a59a38b2b5a3fbc6f431527"
+  },
+  {
+    "file": "figures/primary_dispersion.pdf",
+    "previous_sha256": "fb8e09fd40b6060259235c7bf989f1504a78e94554db4099e5ec1a4aa729b922",
+    "fresh_sha256": "590a9c4578bd04f435c1e9e97d5b7b8478755dbf5b372f1bad621835b1e90e42"
+  },
+  {
+    "file": "figures/primary_dispersion.png",
+    "previous_sha256": "3b59b794a44902fda03e25ee1e7d8da86a644a8467692d34572161b057e54949",
+    "fresh_sha256": "3b59b794a44902fda03e25ee1e7d8da86a644a8467692d34572161b057e54949"
+  },
+  {
+    "file": "figures/primary_raw_pvalues.pdf",
+    "previous_sha256": "15f6d427fa968d7e1e4792555643d94c3378779bf13a32af37abe75f68bc6064",
+    "fresh_sha256": "3c3903d8e067c1e93a5400d86aa325b1ff5d1da8b0b129b740c1a8d803fd08e8"
+  },
+  {
+    "file": "figures/primary_raw_pvalues.png",
+    "previous_sha256": "9380fa37a8e744d0f12dfaed05b4b28ffd55f04d1775f379cebbaad39261167a",
+    "fresh_sha256": "9380fa37a8e744d0f12dfaed05b4b28ffd55f04d1775f379cebbaad39261167a"
+  },
+  {
+    "file": "figures/sensitivity_egfr_dispersion.pdf",
+    "previous_sha256": "0d9bc1b029a368903e76cf69d36bdd04e9218dbb9681b59b5f0b62923cc8ff49",
+    "fresh_sha256": "2f24f281ff44dea43ad51105228d7de4118cdec6525266e7ed7bd593c98acbb9"
+  },
+  {
+    "file": "figures/sensitivity_egfr_dispersion.png",
+    "previous_sha256": "0dd83adc4a57c46457697e3331896008b658722571bf535e5297a7384ea85606",
+    "fresh_sha256": "0dd83adc4a57c46457697e3331896008b658722571bf535e5297a7384ea85606"
+  },
+  {
+    "file": "figures/sensitivity_lfc_agreement.pdf",
+    "previous_sha256": "de72ae348368875e25b20ccdc3fad0fd46af5257c9b3fd815986ac0d247ebd67",
+    "fresh_sha256": "61088a7a41bd139613096cdf69cd816db35f5a11229ad9ca8f07c68e6b4e200e"
+  },
+  {
+    "file": "figures/sensitivity_lfc_agreement.png",
+    "previous_sha256": "52985df22b94f18801ed630dc145816a1d8822ab5bf6c3a96c8cc78b1bcec669",
+    "fresh_sha256": "52985df22b94f18801ed630dc145816a1d8822ab5bf6c3a96c8cc78b1bcec669"
+  },
+  {
+    "file": "figures/sensitivity_unadjusted_dispersion.pdf",
+    "previous_sha256": "354b2bbd9641df032999617df6ef199997207d2812f9ca9c3acd940da7b4550b",
+    "fresh_sha256": "45fc68cccd2ee4bd379cc30ae7c23287dd8b7858f32228b799b100d0016fcacc"
+  },
+  {
+    "file": "figures/sensitivity_unadjusted_dispersion.png",
+    "previous_sha256": "91b2a56a7999594e1e55005170d642f02d1b5270f4e05857c9d359d35628074c",
+    "fresh_sha256": "91b2a56a7999594e1e55005170d642f02d1b5270f4e05857c9d359d35628074c"
+  },
+  {
+    "file": "figures/volcano_labelled.pdf",
+    "previous_sha256": "6d994533e0f034e690ca47fd1eada992b5c5f2cb8fe70967349b91069637b984",
+    "fresh_sha256": "660672653d2046a1f1748de277acc30ca757577d4605c16dcfab8d5a98f0ac48"
+  },
+  {
+    "file": "figures/volcano_labelled.png",
+    "previous_sha256": "70ee36da9a901374e72dca2fd95b3aec06ae2b42289e99de9bfe65b9070735e7",
+    "fresh_sha256": "70ee36da9a901374e72dca2fd95b3aec06ae2b42289e99de9bfe65b9070735e7"
+  },
+  {
+    "file": "objects/analysis_tables.rds",
+    "previous_sha256": "188413384f1603449c9d0eb6cd8314ad5730d2e1925d92895728f4995f6e1c97",
+    "fresh_sha256": "188413384f1603449c9d0eb6cd8314ad5730d2e1925d92895728f4995f6e1c97"
+  },
+  {
+    "file": "objects/deseq2_analysis.rds",
+    "previous_sha256": "e31bda6ce7e8e95e6b351e3eb1a99be7715f5f9007776e5dda823f1bedd5c926",
+    "fresh_sha256": "e31bda6ce7e8e95e6b351e3eb1a99be7715f5f9007776e5dda823f1bedd5c926"
+  },
+  {
+    "file": "objects/Figure1_volcano_GO.rds",
+    "previous_sha256": "997e2e986ece3c42b37b0409f9e2d89c6baab4e6db01c6659f8024a40198ed1c",
+    "fresh_sha256": null
+  },
+  {
+    "file": "objects/ggplot_figures.rds",
+    "previous_sha256": "6bcaf7a6ed57f8e36121349de5d1c351976a4f0c45b9cf0e7b4ba76323944c28",
+    "fresh_sha256": "97e207d533272c665ec3d4adb51173d942d2fb6525dabb507b46b0a3a9215efb"
+  },
+  {
+    "file": "objects/go_analysis.rds",
+    "previous_sha256": "66a4c4f8a1bea4e23d35a31a208dd1a7c0ebe3a3307533416440f13aa08a651f",
+    "fresh_sha256": "66a4c4f8a1bea4e23d35a31a208dd1a7c0ebe3a3307533416440f13aa08a651f"
+  },
+  {
+    "file": "tables/concentration_qc.csv",
+    "previous_sha256": "80c08683c585f05dbf10c45be0b820ce0840e45ac16d897ef85cf2704cb03c5b",
+    "fresh_sha256": "80c08683c585f05dbf10c45be0b820ce0840e45ac16d897ef85cf2704cb03c5b"
+  },
+  {
+    "file": "tables/egfr_sample_values.csv",
+    "previous_sha256": "f563934a16375f755f48b10b5925ad28b6ee44d372e42c9a34e9c4277b73c937",
+    "fresh_sha256": "f563934a16375f755f48b10b5925ad28b6ee44d372e42c9a34e9c4277b73c937"
+  },
+  {
+    "file": "tables/egfr_summary.csv",
+    "previous_sha256": "699797f76ae7c684da8c660f3dbf4db6bd56dd1a6dbba304af289be47a83bb46",
+    "fresh_sha256": "699797f76ae7c684da8c660f3dbf4db6bd56dd1a6dbba304af289be47a83bb46"
+  },
+  {
+    "file": "tables/figure_export_dimensions.csv",
+    "previous_sha256": "8b24fbf5fbe2fc38c2f5a330bab61bb04b44d026534b50ae21aaa36c31e4b065",
+    "fresh_sha256": "8b24fbf5fbe2fc38c2f5a330bab61bb04b44d026534b50ae21aaa36c31e4b065"
+  },
+  {
+    "file": "tables/gene_filtering_summary.csv",
+    "previous_sha256": "c235d4c409b859cb251750a3dd227886d250ba46d6ea06b7d0dea02df913c891",
+    "fresh_sha256": "c235d4c409b859cb251750a3dd227886d250ba46d6ea06b7d0dea02df913c891"
+  },
+  {
+    "file": "tables/go_ambiguous_genes.csv",
+    "previous_sha256": "81ff5d072cd041646f0192de30676bf3ce0d890ea8e4e5f5ba84082df17d6248",
+    "fresh_sha256": "81ff5d072cd041646f0192de30676bf3ce0d890ea8e4e5f5ba84082df17d6248"
+  },
+  {
+    "file": "tables/go_direction_conflicts.csv",
+    "previous_sha256": "a5c9fe3f1db0d48cb9d04936cdb195179cba56dda632cf3f1f2fdc9438202f69",
+    "fresh_sha256": "a5c9fe3f1db0d48cb9d04936cdb195179cba56dda632cf3f1f2fdc9438202f69"
+  },
+  {
+    "file": "tables/go_enrichment_summary.csv",
+    "previous_sha256": "7f90e26f7f47190492183b8e8b75077c04ef947544c4c1c0a5c8da27f81d4b55",
+    "fresh_sha256": "7f90e26f7f47190492183b8e8b75077c04ef947544c4c1c0a5c8da27f81d4b55"
+  },
+  {
+    "file": "tables/go_figure_source_data.csv",
+    "previous_sha256": "979e7b31c943ceab67afac58aaf13063b662198353ae718a2ae013c77599707e",
+    "fresh_sha256": "979e7b31c943ceab67afac58aaf13063b662198353ae718a2ae013c77599707e"
+  },
+  {
+    "file": "tables/go_final_list_counts.csv",
+    "previous_sha256": "f3eb8992e79e5be35d4f4f3eb61f72acc618649c5fc6a8a980d84b22be524fed",
+    "fresh_sha256": "f3eb8992e79e5be35d4f4f3eb61f72acc618649c5fc6a8a980d84b22be524fed"
+  },
+  {
+    "file": "tables/go_higher_all.csv",
+    "previous_sha256": "911686487d3437292fff3153268dc44f9459590c2c032ce13e6233edeb6be990",
+    "fresh_sha256": "911686487d3437292fff3153268dc44f9459590c2c032ce13e6233edeb6be990"
+  },
+  {
+    "file": "tables/go_higher_representative.csv",
+    "previous_sha256": "f839c912ecba7f7db8fab56116150f69cf0b81cfe690dea1f028882181c5e9c6",
+    "fresh_sha256": "f839c912ecba7f7db8fab56116150f69cf0b81cfe690dea1f028882181c5e9c6"
+  },
+  {
+    "file": "tables/go_higher_significant.csv",
+    "previous_sha256": "b3a40944d68a85681a6f3cf1c89213ac97e0a67ea657f76202e99b81e158dafa",
+    "fresh_sha256": "b3a40944d68a85681a6f3cf1c89213ac97e0a67ea657f76202e99b81e158dafa"
+  },
+  {
+    "file": "tables/go_leading_term_contributors.csv",
+    "previous_sha256": "b7f904fc4b259c694ef18c15cbe7ba2930303211e765386b8e7e27affedab0f8",
+    "fresh_sha256": "b7f904fc4b259c694ef18c15cbe7ba2930303211e765386b8e7e27affedab0f8"
+  },
+  {
+    "file": "tables/go_lower_all.csv",
+    "previous_sha256": "5aa7b6fef3cd513e166affa53d218d683e5eb105233cd624b2084988876392c9",
+    "fresh_sha256": "5aa7b6fef3cd513e166affa53d218d683e5eb105233cd624b2084988876392c9"
+  },
+  {
+    "file": "tables/go_lower_representative.csv",
+    "previous_sha256": "4b001e55d39b8aaa061585dc540e6f2a37c8a50129ba9470b3359e50a0afdcf3",
+    "fresh_sha256": "4b001e55d39b8aaa061585dc540e6f2a37c8a50129ba9470b3359e50a0afdcf3"
+  },
+  {
+    "file": "tables/go_lower_significant.csv",
+    "previous_sha256": "9bdcfc13539bc87984e78aba5c3c37d2b037332a6de291a9c3bddc56b9a29b9a",
+    "fresh_sha256": "9bdcfc13539bc87984e78aba5c3c37d2b037332a6de291a9c3bddc56b9a29b9a"
+  },
+  {
+    "file": "tables/go_mapping_all_genes.csv",
+    "previous_sha256": "74676c015d5a9cc60cb31fb156ff3e1c02fc806ac4ae33d0cfd9d39d209af930",
+    "fresh_sha256": "74676c015d5a9cc60cb31fb156ff3e1c02fc806ac4ae33d0cfd9d39d209af930"
+  },
+  {
+    "file": "tables/go_mapping_summary.csv",
+    "previous_sha256": "dc080b836c920465e557cd6533a3709a723190b862604bc04550ee3c46fcf538",
+    "fresh_sha256": "dc080b836c920465e557cd6533a3709a723190b862604bc04550ee3c46fcf538"
+  },
+  {
+    "file": "tables/go_myoblast_annotation.csv",
+    "previous_sha256": "5fadc7b710cd1315f2f3cabe8b536fa61ad22d51b26a8756a166274135e0e26f",
+    "fresh_sha256": "5fadc7b710cd1315f2f3cabe8b536fa61ad22d51b26a8756a166274135e0e26f"
+  },
+  {
+    "file": "tables/go_myoblast_evidence_summary.csv",
+    "previous_sha256": "1a4c29b18579f628f592e9b83a2cc9520b30861f79e74fa3e9865b1abf505901",
+    "fresh_sha256": "1a4c29b18579f628f592e9b83a2cc9520b30861f79e74fa3e9865b1abf505901"
+  },
+  {
+    "file": "tables/go_myoblast_genes.csv",
+    "previous_sha256": "77478b9cbbed56e636ad9a4ac1c1776b3149201bfe95a92581c29287d205bc36",
+    "fresh_sha256": "77478b9cbbed56e636ad9a4ac1c1776b3149201bfe95a92581c29287d205bc36"
+  },
+  {
+    "file": "tables/go_myoblast_overlap.csv",
+    "previous_sha256": "8a333d6ffa96dfa1231ba1ae31c9441b28d168e39bc42abf6d31ba4d4263c65f",
+    "fresh_sha256": "8a333d6ffa96dfa1231ba1ae31c9441b28d168e39bc42abf6d31ba4d4263c65f"
+  },
+  {
+    "file": "tables/go_redundancy_summary.csv",
+    "previous_sha256": "7496ee63ae814d4ec542d93150c0b28c83b96086513bfc3d649e2120dc2b1fe4",
+    "fresh_sha256": "7496ee63ae814d4ec542d93150c0b28c83b96086513bfc3d649e2120dc2b1fe4"
+  },
+  {
+    "file": "tables/go_selected_terms.csv",
+    "previous_sha256": "67d58e9d543a26eab74474b699c04f83cc857ca45ecf568ab899bf28ad511684",
+    "fresh_sha256": "67d58e9d543a26eab74474b699c04f83cc857ca45ecf568ab899bf28ad511684"
+  },
+  {
+    "file": "tables/go_selected_term_contributors.csv",
+    "previous_sha256": "f2fe21a8e290725e38497bbf9f36c5895381fab90e4db3fc8a28fffa835b9910",
+    "fresh_sha256": "f2fe21a8e290725e38497bbf9f36c5895381fab90e4db3fc8a28fffa835b9910"
+  },
+  {
+    "file": "tables/go_selected_term_count_check.csv",
+    "previous_sha256": "39c5fa52efe351a0a4004b59a7319a0b9f704f424b1d52fe37e84be0df3c1f29",
+    "fresh_sha256": "39c5fa52efe351a0a4004b59a7319a0b9f704f424b1d52fe37e84be0df3c1f29"
+  },
+  {
+    "file": "tables/go_submitted_entrez_ids.csv",
+    "previous_sha256": "3b63f6cfa6ce4af6053ac63f5027c15090f6c7c59fad2eace25461521564b6d9",
+    "fresh_sha256": "3b63f6cfa6ce4af6053ac63f5027c15090f6c7c59fad2eace25461521564b6d9"
+  },
+  {
+    "file": "tables/go_unmapped_genes.csv",
+    "previous_sha256": "081f8ea6fe2b8117ff4f51d530435f15116f5db0fe0f4e367cef0ddad42df78c",
+    "fresh_sha256": "081f8ea6fe2b8117ff4f51d530435f15116f5db0fe0f4e367cef0ddad42df78c"
+  },
+  {
+    "file": "tables/labelled_genes.csv",
+    "previous_sha256": "8b07187550de3315a0db4e2807d613ce80d2d8e304f581f18faabc1355164cee",
+    "fresh_sha256": "8b07187550de3315a0db4e2807d613ce80d2d8e304f581f18faabc1355164cee"
+  },
+  {
+    "file": "tables/labelled_genes_cooks.csv",
+    "previous_sha256": "0ee90d88705ab79e2a6c16d02ec052428be4f499f06e38a05e50d2befeba6759",
+    "fresh_sha256": "0ee90d88705ab79e2a6c16d02ec052428be4f499f06e38a05e50d2befeba6759"
+  },
+  {
+    "file": "tables/labelled_genes_group_counts.csv",
+    "previous_sha256": "53e7be6f802c6ce4ecd64fe0e27d829e9263884a26f828d130264f22940ff6bc",
+    "fresh_sha256": "53e7be6f802c6ce4ecd64fe0e27d829e9263884a26f828d130264f22940ff6bc"
+  },
+  {
+    "file": "tables/labelled_genes_sample_counts.csv",
+    "previous_sha256": "7de6af1694008f8a071503f3d04b23a01cf9f0ddf663fb750e32460f7a3f4d17",
+    "fresh_sha256": "7de6af1694008f8a071503f3d04b23a01cf9f0ddf663fb750e32460f7a3f4d17"
+  },
+  {
+    "file": "tables/normalization_qc.csv",
+    "previous_sha256": "5b01ea5a625ab54540f85a604aa195183b05f7603173ab1886e4b47b17d5c229",
+    "fresh_sha256": "5b01ea5a625ab54540f85a604aa195183b05f7603173ab1886e4b47b17d5c229"
+  },
+  {
+    "file": "tables/pca_coordinates.csv",
+    "previous_sha256": "12d8ac6728acb31e2f1ec4d2a850440e8b13fd9c8ab8e0630219a90186eb326e",
+    "fresh_sha256": "12d8ac6728acb31e2f1ec4d2a850440e8b13fd9c8ab8e0630219a90186eb326e"
+  },
+  {
+    "file": "tables/pca_variance.csv",
+    "previous_sha256": "5356f4d1e9a6e7d246c1af456c6f2e56a84a91c2368a9a852ee23e72bdc2b1b5",
+    "fresh_sha256": "5356f4d1e9a6e7d246c1af456c6f2e56a84a91c2368a9a852ee23e72bdc2b1b5"
+  },
+  {
+    "file": "tables/primary_count_replacement_by_gene.csv",
+    "previous_sha256": "3c430a13f88f602fb0182c6ae88b7df87fb735ec54572db7f98c8789993536b7",
+    "fresh_sha256": "3c430a13f88f602fb0182c6ae88b7df87fb735ec54572db7f98c8789993536b7"
+  },
+  {
+    "file": "tables/primary_count_replacement_summary.csv",
+    "previous_sha256": "b2d187a3fdaab785b4fc9b9c6ffb0bb636e70b4fb1488cafbe18fc6355ca78b4",
+    "fresh_sha256": "b2d187a3fdaab785b4fc9b9c6ffb0bb636e70b4fb1488cafbe18fc6355ca78b4"
+  },
+  {
+    "file": "tables/primary_DE_apeglm_annotated.csv",
+    "previous_sha256": "09d966b7979a4bed3316dc13c3dc0dd0512a4666ecac7ddb6f011d466556650d",
+    "fresh_sha256": "09d966b7979a4bed3316dc13c3dc0dd0512a4666ecac7ddb6f011d466556650d"
+  },
+  {
+    "file": "tables/primary_DE_unshrunken.csv",
+    "previous_sha256": "99d703db89a7da27529442cd0267a235b525ea8f51f6bf6d29585c906873899f",
+    "fresh_sha256": "99d703db89a7da27529442cd0267a235b525ea8f51f6bf6d29585c906873899f"
+  },
+  {
+    "file": "tables/sample_metadata_all.csv",
+    "previous_sha256": "03dba5291449895c6bea319bebf2c1ec6451d1150d356b86c51c3c6c43a1dba9",
+    "fresh_sha256": "03dba5291449895c6bea319bebf2c1ec6451d1150d356b86c51c3c6c43a1dba9"
+  },
+  {
+    "file": "tables/sample_metadata_primary.csv",
+    "previous_sha256": "a966817278aea4b005491a28a54c4452228ecd660303850ca743f0180a4cfd23",
+    "fresh_sha256": "a966817278aea4b005491a28a54c4452228ecd660303850ca743f0180a4cfd23"
+  },
+  {
+    "file": "tables/sample_qc.csv",
+    "previous_sha256": "5061de589e48646ae46c11ff734534deb753c32cafb4b91550813c63ad23930f",
+    "fresh_sha256": "5061de589e48646ae46c11ff734534deb753c32cafb4b91550813c63ad23930f"
+  },
+  {
+    "file": "tables/sensitivity_agreement.csv",
+    "previous_sha256": "176ad28736b649d2664e2783001b7e3e1e2e2456a329b3e10cc685b3d20a696c",
+    "fresh_sha256": "176ad28736b649d2664e2783001b7e3e1e2e2456a329b3e10cc685b3d20a696c"
+  },
+  {
+    "file": "tables/sensitivity_comparison.csv",
+    "previous_sha256": "281958f23a19e21c81adfae77f9dbf58cbea370852a2f03d2da5eb0e0086fcdd",
+    "fresh_sha256": "281958f23a19e21c81adfae77f9dbf58cbea370852a2f03d2da5eb0e0086fcdd"
+  },
+  {
+    "file": "tables/sensitivity_egfr_adjusted.csv",
+    "previous_sha256": "fbd146de5724bf9185565bbabd0cb2a55f1f76bcfadf6b373629ba167e67a2be",
+    "fresh_sha256": "fbd146de5724bf9185565bbabd0cb2a55f1f76bcfadf6b373629ba167e67a2be"
+  },
+  {
+    "file": "tables/sensitivity_labelled_genes.csv",
+    "previous_sha256": "13d07e3fb520d6f3a363cf0891b21430b1452279b19631b150cd2a3755643e5c",
+    "fresh_sha256": "13d07e3fb520d6f3a363cf0891b21430b1452279b19631b150cd2a3755643e5c"
+  },
+  {
+    "file": "tables/sensitivity_largest_changes.csv",
+    "previous_sha256": "33c87c837aca798b70de4c636b8bd43c68c9b48ed5bffe00434a538ae25418ee",
+    "fresh_sha256": "33c87c837aca798b70de4c636b8bd43c68c9b48ed5bffe00434a538ae25418ee"
+  },
+  {
+    "file": "tables/sensitivity_significance_counts.csv",
+    "previous_sha256": "a5084543385169503775ef437aba920a5b57ed0e82d08a52e8cfd48ae46f3699",
+    "fresh_sha256": "a5084543385169503775ef437aba920a5b57ed0e82d08a52e8cfd48ae46f3699"
+  },
+  {
+    "file": "tables/sensitivity_significant_reversals.csv",
+    "previous_sha256": "b122eabd8045533a1f470274a60b204bc26937199812211d740e40a970f82ff9",
+    "fresh_sha256": "b122eabd8045533a1f470274a60b204bc26937199812211d740e40a970f82ff9"
+  },
+  {
+    "file": "tables/sensitivity_unadjusted.csv",
+    "previous_sha256": "1adfb5196db6023af4385e387d6711d8736b54ddcfddae6bd2d0e6ecacc787ef",
+    "fresh_sha256": "1adfb5196db6023af4385e387d6711d8736b54ddcfddae6bd2d0e6ecacc787ef"
+  },
+  {
+    "file": "tables/volcano_source_data.csv",
+    "previous_sha256": "17c8e6e67712cfdbaf0eea79090ea4c376996ceedffe26c0be6847afc23a712c",
+    "fresh_sha256": "17c8e6e67712cfdbaf0eea79090ea4c376996ceedffe26c0be6847afc23a712c"
+  }
+]

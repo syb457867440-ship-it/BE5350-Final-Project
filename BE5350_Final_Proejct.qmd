@@ -1,0 +1,2313 @@
+---
+title: "BE5350 Final Project"
+author: "Yibo Shi"
+format: html
+---
+```{r}
+library(ggplot2)
+library(DESeq2)
+library(dplyr)
+library(AnnotationDbi)
+library(org.Hs.eg.db)
+library(clusterProfiler)
+```
+
+```{r}
+# Set the project directory and the data directory
+
+project_dir <- "D:/Yibo Main/BE5350 Final Project"
+raw_dir <- file.path(project_dir, "data", "raw")
+
+list.files(raw_dir)
+```
+
+```{r}
+# Inspect the data in both files
+
+count_files <- untar(
+  file.path(raw_dir, "GSE175759_RAW.tar"), 
+  list = TRUE
+)
+
+length(count_files)
+head(count_files)
+```
+
+```{r}
+# Extract the samples from GSE175759_RAW.tar to a new folder named "counts"
+counts_dir <- file.path(project_dir, "data", "counts")
+dir.create(counts_dir, recursive = TRUE, showWarnings = FALSE)
+
+untar(
+  file.path(raw_dir, "GSE175759_RAW.tar"),
+  exdir = counts_dir
+)
+
+sample_files <- list.files(
+  counts_dir, 
+  pattern = "\\.txt\\.gz$", 
+  full.names = TRUE
+)
+
+length(sample_files)
+head(basename(sample_files))
+```
+
+```{r}
+# Read each compressed count file into a list of data frames
+count_tables <- lapply(
+  sample_files,
+  read.delim,
+  header = TRUE,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+# Use GEO sample accessions as column names for matching to metadata later
+sample_ids <- sub("_.*$", "", basename(sample_files))
+
+# Use the first file's gene order as the reference
+gene_ids <- count_tables[[1]]$id
+
+# Confirm unique sample IDs and the same unique genes in every file
+stopifnot(
+  !anyDuplicated(sample_ids),
+  all(vapply(count_tables, function(x) {
+    !anyDuplicated(x$id) && setequal(x$id, gene_ids)
+  }, logical(1)))
+)
+
+# Align each sample by gene ID, then combine its counts into a matrix
+count_matrix <- do.call(
+  cbind,
+  lapply(count_tables, function(x) {
+    x[[2]][match(gene_ids, x$id)]
+  })
+)
+
+rownames(count_matrix) <- gene_ids
+colnames(count_matrix) <- sample_ids
+
+# Check that the matrix contains valid, nonnegative whole-number counts
+stopifnot(
+  is.numeric(count_matrix),
+  all(is.finite(count_matrix)),
+  all(count_matrix >= 0),
+  all(count_matrix == floor(count_matrix))
+)
+
+message("Count matrix checks passed.")
+
+# Inspect the dimensions and a small section
+dim(count_matrix)
+count_matrix[1:6, 1:5]
+```
+
+```{r}
+# Read the compressed metadata file as lines of text
+metadata_lines <- readLines(
+  gzfile(file.path(raw_dir, "GSE175759_series_matrix.txt.gz"))
+)
+
+# Pick the necessary information and store it
+sample_lines <- grep(
+  "^!Sample_(title|geo_accession|characteristics_ch1)\\t", 
+  metadata_lines, 
+  value = TRUE
+)
+length(sample_lines)
+sample_lines
+```
+
+```{r}
+# Find the necessary information
+title_line <- grep("^!Sample_title\t", metadata_lines, value = TRUE)
+id_line <- grep("^!Sample_geo_accession\t", metadata_lines, value = TRUE)
+diagnosis_line <- grep(
+  '^!Sample_characteristics_ch1\t"diagnosis:',
+  metadata_lines,
+  value = TRUE
+)
+outlier_line <- grep(
+  '^!Sample_characteristics_ch1\t"technical outlier:',
+  metadata_lines, 
+  value = TRUE
+)
+egfr_line <- grep(
+  '^!Sample_characteristics_ch1\t"estimated gfr',
+  metadata_lines, 
+  value = TRUE
+)
+
+# Check if the search for only one line
+stopifnot(
+  length(title_line) == 1L,
+  length(id_line) == 1L,
+  length(diagnosis_line) == 1L,
+  length(outlier_line) == 1L,
+  length(egfr_line) == 1L
+)
+
+# Separate them by tabs
+sample_titles <- strsplit(title_line, "\t")[[1]][-1]
+geo_ids <- strsplit(id_line, "\t")[[1]][-1]
+diagnoses <- strsplit(diagnosis_line, "\t")[[1]][-1]
+outlier_labels <- strsplit(outlier_line, "\t")[[1]][-1]
+egfr_values <- strsplit(egfr_line, "\t")[[1]][-1]
+
+# Clean up the data
+sample_titles <- gsub('"', "", sample_titles)
+geo_ids <- gsub('"', "", geo_ids)
+diagnoses <- gsub('"', "", diagnoses)
+diagnoses <- sub("^diagnosis: ", "", diagnoses)
+outlier_labels <- gsub('"', "", outlier_labels)
+outlier_labels <- sub("^technical outlier: ", "", outlier_labels)
+egfr_values <- gsub('"', "", egfr_values)
+egfr_values <- sub(
+  "estimated gfr (ckd-epi): ", 
+  "", egfr_values,
+  fixed = TRUE
+  )
+
+# Create the table
+sample_info <- data.frame(
+  sample_id = geo_ids, 
+  title = sample_titles, 
+  diagnosis = diagnoses,
+  technical_outlier = outlier_labels, 
+  egfr = as.numeric(egfr_values),
+  stringsAsFactors = FALSE
+)
+
+dim(sample_info)
+head(sample_info)
+str(sample_info)
+```
+
+```{r}
+# Check that sample IDs are unique and match the count matrix
+stopifnot(!anyDuplicated(sample_info$sample_id))
+stopifnot(setequal(sample_info$sample_id, colnames(count_matrix)))
+
+# Arrange metadata rows to follow the count-column order
+sample_info <- sample_info %>%
+  dplyr::arrange(match(sample_id, colnames(count_matrix)))
+
+# Use sample IDs as row names
+rownames(sample_info) <- sample_info$sample_id
+
+# Confirm that the order matches exactly
+stopifnot(identical(rownames(sample_info), colnames(count_matrix)))
+message("Sample IDs are unique and metadata order matches the count matrix.")
+```
+
+```{r}
+# Select IgAN and Control group for the following analysis
+igan_control <- sample_info %>%
+  dplyr::filter(
+    diagnosis %in% c("IgAN", "Control"),
+    technical_outlier == "No"
+  )
+igan_control_counts <- count_matrix[, igan_control$sample_id, drop = FALSE]
+
+table(igan_control$diagnosis)
+stopifnot(identical(colnames(igan_control_counts), igan_control$sample_id))
+message("Sample Selection Success")
+```
+
+```{r}
+# Create a QC table with sample IDs and diagnoses
+sample_qc <- igan_control %>%
+  dplyr::select(sample_id, diagnosis) %>%
+  dplyr::mutate(
+    total_counts = colSums(igan_control_counts),
+    detected_genes = colSums(igan_control_counts > 0)
+  )
+
+sample_qc %>% select(total_counts, detected_genes) %>%
+  summary()
+sample_qc
+```
+
+```{r}
+# A box plot to show the library size of the two groups
+group_sizes <- table(igan_control$diagnosis)
+
+IgAN_Control_Library_Plot <- ggplot(
+  sample_qc,
+  aes(x = diagnosis, y = total_counts / 1e6)
+) +
+  geom_boxplot(
+    width = 0.45,
+    coef = 1.5,
+    outlier.shape = NA,
+    color = "black",
+    fill = "white",
+    linewidth = 0.45
+  ) +
+  geom_point(
+    aes(color = diagnosis),
+    position = position_jitter(width = 0.10, height = 0, seed = 5350),
+    size = 2,
+    alpha = 0.85
+  ) +
+  scale_color_manual(
+    values = c("Control" = "black", "IgAN" = "#D55E00")
+  ) +
+  scale_x_discrete(
+    limits = c("Control", "IgAN"),
+    labels = function(x) {
+      paste0(x, "\n(n = ", group_sizes[x], ")")
+    }
+  ) +
+  labs(
+    x = "Sample Group",
+    y = "Gene-assigned counts (millions)",
+    title = "Library size for IgAN and Control", 
+    color = "Diagnosis"
+  ) +
+  theme_classic(base_size = 11, base_family = "sans") +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 12),
+    axis.text = element_text(color = "black"),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4)
+  ) +
+  geom_text(
+    aes(
+      label = ifelse(sample_id == "GSM5345942", sample_id, "")
+    ),
+    position = position_jitter(
+      width = 0.10, height = 0, seed = 5350
+    ),
+    hjust = -0.15,
+    size = 3,
+    show.legend = FALSE
+  )
+
+IgAN_Control_Library_Plot
+
+sample_qc %>%
+  dplyr::arrange(dplyr::desc(total_counts)) %>%
+summary()
+```
+
+```{r}
+# Create the gene-detection plot
+IgAN_Control_detection_plot <- ggplot(
+  sample_qc,
+  aes(
+    x = total_counts / 1e6,
+    y = detected_genes,
+    color = diagnosis
+  )
+) +
+  geom_point(
+    shape = 16,
+    size = 2.2,
+    alpha = 0.85
+  ) +
+  scale_color_manual(
+    values = c("Control" = "black", "IgAN" = "#D55E00")
+  ) +
+  scale_y_continuous(
+    labels = function(x) {
+      format(x, big.mark = ",", scientific = FALSE, trim = TRUE)
+    }
+  ) +
+  labs(
+    x = "Gene-assigned counts (millions)",
+    y = "Detected genes (count > 0)",
+    color = NULL,
+    title = "Gene detection and library size"
+  ) +
+  theme_classic(base_size = 11, base_family = "sans") +
+  theme(
+    legend.position = "top",
+    legend.justification = "left",
+    plot.title = element_text(face = "bold", size = 12),
+    axis.text = element_text(color = "black"),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4)
+  ) +
+  geom_text(
+    aes(
+      label = ifelse(sample_id == "GSM5345942", sample_id, "")
+    ),
+    position = position_jitter(
+      width = 0.10, height = 0, seed = 5350
+    ),
+    vjust = -0.8,
+    size = 3,
+    show.legend = FALSE
+  ) +
+  geom_text(
+    aes(
+      label = ifelse(sample_id == "GSM5345939", sample_id, "")
+    ),
+    position = position_jitter(
+      width = 0.10, height = 0, seed = 5350
+    ),
+    vjust = -0.8,
+    size = 3,
+    show.legend = FALSE
+  )
+
+IgAN_Control_detection_plot
+
+sample_qc %>% dplyr::arrange(detected_genes)
+```
+
+```{r}
+# Calculate the fraction of counts assigned to each sample's top 10 genes
+top10_fraction <- apply(igan_control_counts, 2, function(x) {
+  top10_counts <- sort(x, decreasing = TRUE)[1:10]
+  sum(top10_counts) / sum(x)
+})
+
+# Samples flagged in the QC plots
+flagged_samples <- c("GSM5345939", "GSM5345942")
+
+# Add the percentages to the QC table
+concentration_qc <- sample_qc %>%
+  dplyr::mutate(
+    top10_percent = unname(100 * top10_fraction[sample_id]),
+    flagged = sample_id %in% flagged_samples
+  ) %>%
+  dplyr::arrange(dplyr::desc(top10_percent))
+
+# Show the flagged samples
+concentration_qc %>%
+  dplyr::filter(flagged)
+
+# Show the five samples with the highest count concentration
+concentration_qc %>%
+  dplyr::slice_head(n = 5)
+```
+
+```{r}
+# Determine the size of the smaller group
+min_samples <- min(table(igan_control$diagnosis))
+
+# Identify genes with at least 10 counts in enough samples
+keep_genes <- rowSums(igan_control_counts >= 10) >= min_samples
+
+# Keep those genes and all sample columns
+counts_filtered <- igan_control_counts[keep_genes, , drop = FALSE]
+
+# Summarize the filtering
+c(
+  genes_before = nrow(igan_control_counts),
+  genes_retained = sum(keep_genes),
+  genes_removed = sum(!keep_genes)
+)
+
+dim(counts_filtered)
+```
+
+```{r}
+# Define the groups, with Control as the reference
+igan_control <- igan_control %>%
+  dplyr::mutate(
+    diagnosis = factor(diagnosis, levels = c("Control", "IgAN"))
+  )
+
+# Use sample IDs as metadata row names
+rownames(igan_control) <- igan_control$sample_id
+
+# Confirm that metadata rows match count columns
+stopifnot(
+  identical(colnames(counts_filtered), rownames(igan_control))
+)
+
+# Create the DESeq2 dataset
+dds <- DESeq2::DESeqDataSetFromMatrix(
+  countData = counts_filtered,
+  colData = igan_control,
+  design = ~ diagnosis
+)
+
+dds
+```
+
+```{r}
+# Estimate a size factor for each sample (median-of-ratios)
+dds <- DESeq2::estimateSizeFactors(dds)
+
+# Inspect the size factors alongside the sample groups
+normalization_qc <- data.frame(
+  sample_id = colnames(dds),
+  diagnosis = dds$diagnosis,
+  filtered_counts_millions = colSums(DESeq2::counts(dds)) / 1e6,
+  size_factor = DESeq2::sizeFactors(dds)
+)
+
+summary(normalization_qc$size_factor)
+head(normalization_qc)
+
+stopifnot(
+  all(is.finite(normalization_qc$size_factor)),
+  all(normalization_qc$size_factor > 0)
+)
+message("All size factors are finite and positive.")
+```
+
+```{r}
+# Transform normalized expression for exploratory sample QC
+vsd <- DESeq2::vst(dds, blind = TRUE)
+
+# Extract the transformed expression matrix
+vst_matrix <- SummarizedExperiment::assay(vsd)
+
+vst_matrix
+```
+
+```{r}
+# Calculate PCA using the 500 most variable genes
+pca_data <- DESeq2::plotPCA(
+  vsd,
+  intgroup = "diagnosis",
+  ntop = 500,
+  returnData = TRUE
+)
+
+# Extract the percentage of variance explained by PC1 and PC2
+percent_variance <- 100 * attr(pca_data, "percentVar")
+
+head(pca_data)
+percent_variance
+```
+
+```{r}
+IgAN_Control_PCA_plot <- ggplot(
+  pca_data,
+  aes(x = PC1, y = PC2, color = diagnosis)
+) +
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed",
+    color = "grey70",
+    linewidth = 0.4
+  ) +
+  geom_vline(
+    xintercept = 0,
+    linetype = "dashed",
+    color = "grey70",
+    linewidth = 0.4
+  ) +
+  stat_ellipse(
+    aes(fill = diagnosis),
+    geom = "polygon",
+    type = "norm",
+    level = 0.95,
+    alpha = 0.10,
+    linewidth = 0.4,
+    show.legend = FALSE
+  ) +
+  geom_point(
+    shape = 16,
+    size = 2,
+    alpha = 0.85
+  ) +
+  scale_color_manual(
+    values = c("Control" = "black", "IgAN" = "#D55E00")
+  ) +
+  scale_fill_manual(
+    values = c("Control" = "black", "IgAN" = "#D55E00")
+  ) +
+  coord_equal() +
+  labs(
+    x = paste0("PC1 (", round(percent_variance[1], 1), "%)"),
+    y = paste0("PC2 (", round(percent_variance[2], 1), "%)"),
+    color = "Group"
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 3, alpha = 1)
+    ),
+    fill = "none"
+  ) +
+  theme_bw(base_size = 11, base_family = "sans") +
+  theme(
+    panel.grid = element_blank(),
+    panel.border = element_rect(
+      color = "grey40",
+      fill = NA,
+      linewidth = 0.45
+    ),
+    axis.text = element_text(color = "black"),
+    axis.ticks = element_line(color = "grey40", linewidth = 0.35),
+    legend.position = "right",
+    legend.justification = "center",
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 10)
+  )
+
+# Find the low-detection sample in the PCA data
+candidate_pca <- pca_data %>%
+  dplyr::filter(name %in% c("GSM5345939", "GSM5345942"))
+
+# Draw a ring around it on a copy of the PCA plot
+IgAN_Control_PCA_plot_check <- IgAN_Control_PCA_plot +
+  geom_point(
+    data = candidate_pca,
+    aes(x = PC1, y = PC2),
+    inherit.aes = FALSE,
+    shape = 1,
+    size = 4.5,
+    stroke = 1,
+    color = "#0072B2",
+    show.legend = FALSE
+  ) +
+  labs(
+    subtitle = "Blue rings: samples flagged during library-size and gene-detection QC"
+  ) +
+  geom_text(
+    data = candidate_pca,
+    aes(x = PC1, y = PC2, label = name),
+    inherit.aes = FALSE,
+    vjust = -1.2,
+    size = 3,
+    color = "#0072B2"
+  )
+
+IgAN_Control_PCA_plot_check
+```
+
+```{r}
+# Fit the model and perform the default Wald tests
+dds <- DESeq2::DESeq(dds)
+
+# Inspect the available model coefficients
+DESeq2::resultsNames(dds)
+
+res <- DESeq2::results(
+  dds,
+  contrast = c("diagnosis", "IgAN", "Control"),
+  alpha = 0.05
+)
+
+summary(res)
+```
+
+```{r}
+# Check whether model fitting converged for every gene
+table(S4Vectors::mcols(dds)$betaConv, useNA = "ifany")
+
+# Inspect gene-wise and fitted dispersion estimates
+DESeq2::plotDispEsts(dds)
+
+# Distribution of raw p-values
+hist(res$pvalue, breaks = 50, main = "Raw p-values", xlab = "p-value")
+```
+
+```{r}
+# Stabilize the log2 fold-change estimates
+res_shrunk <- DESeq2::lfcShrink(
+  dds,
+  coef = "diagnosis_IgAN_vs_Control",
+  res = res,
+  type = "apeglm"
+)
+
+# MA plot of the unshrunken fold changes
+DESeq2::plotMA(
+  res,
+  alpha = 0.05,
+  ylim = c(-5, 5),
+  main = "Before shrinkage"
+)
+
+# MA plot of the shrunken fold changes
+DESeq2::plotMA(
+  res_shrunk,
+  alpha = 0.05,
+  ylim = c(-5, 5),
+  main = "After shrinkage (apeglm)"
+)
+```
+
+```{r}
+# Confirm matching gene order
+stopifnot(identical(rownames(res), rownames(res_shrunk)))
+
+# Inspect the recorded shrinkage method
+DESeq2::priorInfo(res_shrunk)
+
+# Summarize the absolute change in log2 fold change
+lfc_change <- abs(
+  res_shrunk$log2FoldChange - res$log2FoldChange
+)
+
+summary(lfc_change)
+```
+
+```{r}
+# Build a results table and add Ensembl IDs without version numbers
+results_annotated <- as.data.frame(res_shrunk) %>%
+  dplyr::mutate(
+    gene_id = rownames(res_shrunk),
+    ensembl_id = sub("\\.[0-9]+$", "", gene_id)
+  )
+
+# Look up human gene symbols
+gene_symbols <- AnnotationDbi::mapIds(
+  org.Hs.eg.db,
+  keys = unique(results_annotated$ensembl_id),
+  keytype = "ENSEMBL",
+  column = "SYMBOL",
+  multiVals = "asNA"
+)
+
+# Match each symbol to its Ensembl ID
+results_annotated <- results_annotated %>%
+  dplyr::mutate(
+    gene_symbol = unname(gene_symbols[ensembl_id])
+  ) %>%
+  dplyr::relocate(gene_id, ensembl_id, gene_symbol) %>%
+  dplyr::arrange(padj)
+
+# Check how many genes received a symbol
+results_annotated %>%
+  dplyr::summarise(
+    total_genes = dplyr::n(),
+    with_symbol = sum(!is.na(gene_symbol)),
+    without_symbol = sum(is.na(gene_symbol))
+  )
+```
+
+```{r}
+# Take the Volcano data assembled
+volcano_data <- results_annotated %>%
+  dplyr::filter(
+    !is.na(padj),
+    is.finite(log2FoldChange)
+  ) %>%
+  dplyr::mutate(
+    significance = dplyr::case_when(
+      padj < 0.05 & log2FoldChange > 0 ~ "Higher in IgAN",
+      padj < 0.05 & log2FoldChange < 0 ~ "Lower in IgAN",
+      TRUE ~ "Not significant"
+    ),
+    neg_log10_padj = -log10(pmax(padj, .Machine$double.xmin))
+  ) %>%
+  dplyr::arrange(padj < 0.05)
+```
+
+```{r}
+# Plot expression differences and statistical evidence
+IgAN_Control_volcano_Plot <- ggplot(
+  volcano_data,
+  aes(x = log2FoldChange, y = neg_log10_padj)
+) +
+  geom_hline(
+    yintercept = -log10(0.05),
+    linetype = "dashed", color = "grey60", linewidth = 0.4
+  ) +
+  geom_vline(
+    xintercept = c(-1, 1),
+    linetype = "dashed", color = "grey60", linewidth = 0.4
+  ) +
+  geom_point(
+    aes(color = significance),
+    shape = 16, size = 1.3, alpha = 0.65
+  ) +
+  scale_color_manual(
+    values = c(
+      "Higher in IgAN" = "#D55E00",
+      "Lower in IgAN" = "#0072B2",
+      "Not significant" = "grey75"
+    ),
+    breaks = c(
+      "Higher in IgAN", "Lower in IgAN", "Not significant"
+    )
+  ) +
+  labs(
+    title = "IgAN versus Control",
+    x = "Shrunken log2 fold change (IgAN / Control)",
+    y = expression(-log[10]("adjusted p-value")),
+    color = NULL
+  ) +
+  theme_classic(base_size = 11, base_family = "sans") +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(face = "bold", size = 12),
+    axis.text = element_text(color = "black"),
+    axis.line = element_line(linewidth = 0.4),
+    axis.ticks = element_line(linewidth = 0.4)
+  ) +
+  guides(color = guide_legend(
+    override.aes = list(size = 3, alpha = 1)
+  ))
+
+# Select the five most significant named genes in each direction
+top_genes <- volcano_data %>%
+  dplyr::filter(
+    !is.na(gene_symbol),
+    significance != "Not significant"
+  ) %>%
+  dplyr::group_by(significance) %>%
+  dplyr::slice_min(order_by = pvalue, n = 5, with_ties = FALSE) %>%
+  dplyr::ungroup()
+
+# Add gene labels to the existing volcano plot
+IgAN_Control_volcano_Plot_labeled <- IgAN_Control_volcano_Plot +
+  ggrepel::geom_text_repel(
+    data = top_genes,
+    aes(
+      x = log2FoldChange,
+      y = neg_log10_padj,
+      label = gene_symbol
+    ),
+    inherit.aes = FALSE,
+    color = "black",
+    fontface = "italic",
+    size = 3,
+    box.padding = 0.5,
+    point.padding = 0.3,
+    min.segment.length = 0,
+    segment.color = "grey50",
+    segment.size = 0.3,
+    max.overlaps = Inf,
+    seed = 5350
+  ) +
+  labs(
+    caption = paste(
+  "Significance: BH-adjusted p < 0.05 (horizontal line).",
+  "Vertical lines mark shrunken log2 fold changes of ±1 (twofold differences); they are not used to define significance.",
+  "Labels: five named genes with the smallest raw p-values in each direction among genes with BH-adjusted p < 0.05.",
+  sep = "\n"
+)
+  ) +
+  theme(plot.caption = element_text(hjust = 0))
+IgAN_Control_volcano_Plot_labeled
+```
+
+```{r}
+# Inspect the genes labeled on the volcano plot
+top_gene_table <- top_genes %>%
+  dplyr::mutate(
+    fold_change = 2^log2FoldChange
+  ) %>%
+  dplyr::select(
+    gene_id,
+    gene_symbol,
+    significance,
+    baseMean,
+    log2FoldChange,
+    fold_change,
+    lfc_posterior_sd = lfcSE,
+    padj
+  ) %>%
+  dplyr::arrange(significance, padj)
+
+print(tibble::as_tibble(top_gene_table), n = 10, width = Inf)
+```
+
+```{r}
+# Normalized counts for the labeled genes
+selected_counts <- DESeq2::counts(dds, normalized = TRUE)[
+  top_gene_table$gene_id, , drop = FALSE
+]
+
+# Summarize each gene within each diagnosis group
+gene_inspection <- lapply(top_gene_table$gene_id, function(gene) {
+  data.frame(
+    gene_id = gene,
+    diagnosis = dds$diagnosis,
+    normalized_count = selected_counts[gene, ]
+  ) %>%
+    dplyr::group_by(gene_id, diagnosis) %>%
+    dplyr::summarise(
+      n_samples = dplyr::n(),
+      median_count = median(normalized_count),
+      min_count = min(normalized_count),
+      max_count = max(normalized_count),
+      samples_with_zero = sum(normalized_count == 0),
+      .groups = "drop"
+    )
+}) %>%
+  dplyr::bind_rows() %>%
+  dplyr::left_join(
+    top_gene_table %>%
+      dplyr::select(gene_id, gene_symbol, log2FoldChange),
+    by = "gene_id"
+  ) %>%
+  dplyr::relocate(gene_symbol, .after = gene_id)
+
+print(tibble::as_tibble(gene_inspection), n = Inf, width = Inf)
+```
+
+```{r}
+# Get the original normalized counts for these ten genes
+selected_counts <- DESeq2::counts(dds, normalized = TRUE)[
+  top_gene_table$gene_id, , drop = FALSE
+]
+
+# Arrange the counts into one row per gene and sample
+gene_plot_data <- as.data.frame(
+  as.table(selected_counts),
+  responseName = "normalized_count",
+  stringsAsFactors = FALSE
+)
+
+colnames(gene_plot_data) <- c(
+  "gene_id", "sample_id", "normalized_count"
+)
+
+plot_metadata <- data.frame(
+  sample_id = colnames(dds),
+  diagnosis = dds$diagnosis
+)
+
+gene_plot_data <- gene_plot_data %>%
+  dplyr::left_join(
+    top_gene_table %>%
+      dplyr::select(gene_id, gene_symbol, significance),
+    by = "gene_id"
+  ) %>%
+  dplyr::left_join(plot_metadata, by = "sample_id") %>%
+  dplyr::mutate(
+    diagnosis = factor(diagnosis, levels = c("Control", "IgAN")),
+    gene_symbol = factor(
+      gene_symbol,
+      levels = top_gene_table$gene_symbol
+    ),
+    log10_count = log10(normalized_count + 1)
+  )
+
+# Plot every sample, including samples with zero counts
+IgAN_Control_gene_counts_plot <- ggplot(
+  gene_plot_data,
+  aes(x = diagnosis, y = log10_count)
+) +
+  geom_boxplot(
+    width = 0.5,
+    fill = "white",
+    color = "black",
+    linewidth = 0.4,
+    outlier.shape = NA
+  ) +
+  geom_point(
+    aes(color = diagnosis),
+    position = position_jitter(
+      width = 0.15,
+      height = 0,
+      seed = 5350
+    ),
+    shape = 16,
+    size = 1.5,
+    alpha = 0.75
+  ) +
+  facet_wrap(
+    ~ gene_symbol,
+    ncol = 5,
+    scales = "free_y"
+  ) +
+  scale_color_manual(
+    values = c("Control" = "black", "IgAN" = "#D55E00")
+  ) +
+  labs(
+    x = NULL,
+    y = "log10(normalized count + 1)",
+    title = "Expression of the ten labelled genes",
+    subtitle = "Each point represents one sample", 
+    caption = paste(
+  "Counts were normalized using DESeq2 size factors.",
+  "Each panel has an independent y-axis range;",
+  "boxplots summarize log10(normalized count + 1)."
+  )
+  )+
+  theme_classic(base_size = 11, base_family = "sans") +
+  theme(
+    legend.position = "none",
+    strip.background = element_blank(),
+    strip.text = element_text(face = "italic", size = 11),
+    axis.text = element_text(color = "black"),
+    plot.title = element_text(face = "bold")
+  )
+
+IgAN_Control_gene_counts_plot
+```
+
+```{r}
+# Inspect the stored matrices
+SummarizedExperiment::assayNames(dds)
+
+# Original Cook's distances: genes in rows, samples in columns
+cooks <- SummarizedExperiment::assays(dds)[["cooks"]]
+
+# Default cutoff: 99th percentile of the F distribution
+model_matrix <- model.matrix(
+  DESeq2::design(dds),
+  data = as.data.frame(SummarizedExperiment::colData(dds))
+)
+
+n_parameters <- ncol(model_matrix)
+
+cooks_cutoff <- qf(
+  0.99,
+  df1 = n_parameters,
+  df2 = ncol(dds) - n_parameters
+)
+
+cooks_cutoff
+```
+
+```{r}
+original_counts <- DESeq2::counts(dds)
+
+# Start with no changed entries
+counts_changed <- matrix(
+  FALSE,
+  nrow = nrow(dds),
+  ncol = ncol(dds),
+  dimnames = dimnames(original_counts)
+)
+
+if ("replaceCounts" %in% SummarizedExperiment::assayNames(dds)) {
+  replacement_counts <-
+    SummarizedExperiment::assays(dds)[["replaceCounts"]]
+
+  counts_changed <- replacement_counts != original_counts
+}
+
+c(
+  changed_counts = sum(counts_changed),
+  genes_with_changed_counts = sum(rowSums(counts_changed) > 0),
+  samples_with_changed_counts = sum(colSums(counts_changed) > 0)
+)
+```
+
+```{r}
+# Select the ten genes in the same order as the table
+selected_cooks <- cooks[
+  top_gene_table$gene_id, , drop = FALSE
+]
+
+selected_changes <- counts_changed[
+  top_gene_table$gene_id, , drop = FALSE
+]
+
+# Summarize influence and count replacements for each gene
+top_gene_cooks <- top_gene_table %>%
+  tibble::as_tibble() %>%
+  dplyr::select(gene_id, gene_symbol) %>%
+  dplyr::mutate(
+    max_cooks = apply(selected_cooks, 1, function(x) {
+      if (all(is.na(x))) {
+        NA_real_
+      } else {
+        max(x, na.rm = TRUE)
+      }
+    }),
+    n_missing_cooks = rowSums(is.na(selected_cooks)),
+    n_above_cutoff = rowSums(
+      selected_cooks > cooks_cutoff,
+      na.rm = TRUE
+    ),
+    n_changed_counts = rowSums(selected_changes)
+  ) %>%
+  dplyr::arrange(dplyr::desc(max_cooks))
+
+print(top_gene_cooks, n = Inf, width = Inf)
+```
+
+```{r}
+# Get eGFR and diagnosis for the samples in the primary model
+egfr_metadata <- data.frame(
+  sample_id = colnames(dds),
+  diagnosis = dds$diagnosis,
+  egfr = dds$egfr
+)
+
+# Confirm that eGFR is numeric
+stopifnot(is.numeric(egfr_metadata$egfr))
+
+# Count missing or invalid values
+egfr_checks <- egfr_metadata %>%
+  dplyr::group_by(diagnosis) %>%
+  dplyr::summarise(
+    n_samples = dplyr::n(),
+    n_missing = sum(is.na(egfr)),
+    n_infinite = sum(is.infinite(egfr)),
+    n_negative = sum(egfr < 0 & is.finite(egfr), na.rm = TRUE),
+    n_available = sum(is.finite(egfr)),
+    .groups = "drop"
+  )
+
+# Use finite values for the descriptive statistics
+egfr_available <- egfr_metadata %>%
+  dplyr::filter(is.finite(egfr))
+
+egfr_summary <- egfr_available %>%
+  dplyr::group_by(diagnosis) %>%
+  dplyr::summarise(
+    minimum = min(egfr),
+    lower_quartile = quantile(egfr, 0.25),
+    median = median(egfr),
+    upper_quartile = quantile(egfr, 0.75),
+    maximum = max(egfr),
+    .groups = "drop"
+  )
+
+egfr_summary <- egfr_checks %>%
+  dplyr::left_join(egfr_summary, by = "diagnosis")
+
+print(egfr_summary, n = Inf, width = Inf)
+
+# List any samples without a usable eGFR value
+egfr_metadata %>%
+  dplyr::filter(!is.finite(egfr))
+```
+
+```{r}
+IgAN_Control_egfr_plot <- ggplot(
+  egfr_available,
+  aes(x = diagnosis, y = egfr)
+) +
+  geom_boxplot(
+    width = 0.5,
+    fill = "white",
+    color = "black",
+    linewidth = 0.4,
+    outlier.shape = NA
+  ) +
+  geom_point(
+    aes(color = diagnosis),
+    position = position_jitter(
+      width = 0.15,
+      height = 0,
+      seed = 5350
+    ),
+    size = 2,
+    alpha = 0.8
+  ) +
+  scale_x_discrete(limits = c("Control", "IgAN")) +
+  scale_color_manual(
+    values = c("Control" = "black", "IgAN" = "#D55E00")
+  ) +
+  labs(
+    x = NULL,
+    y = expression(eGFR ~ "(mL/min/1.73" ~ m^2 * ")"),
+    title = "Kidney function by diagnosis",
+    subtitle = "Each point represents one sample"
+  ) +
+  theme_classic(base_size = 11, base_family = "sans") +
+  theme(
+    legend.position = "none",
+    axis.text = element_text(color = "black"),
+    plot.title = element_text(face = "bold")
+  )
+
+IgAN_Control_egfr_plot
+
+# Inspect the lowest and highest values within each group
+egfr_extremes <- egfr_available %>%
+  dplyr::group_by(diagnosis) %>%
+  dplyr::arrange(egfr, .by_group = TRUE) %>%
+  dplyr::filter(
+    dplyr::row_number() <= 3 |
+      dplyr::row_number() > dplyr::n() - 3
+  ) %>%
+  dplyr::ungroup()
+
+print(tibble::as_tibble(egfr_extremes), n = Inf, width = Inf)
+```
+
+```{r}
+# Copy metadata from the primary analysis
+egfr_coldata <- as.data.frame(
+  SummarizedExperiment::colData(dds)
+)
+
+stopifnot(
+  all(is.finite(egfr_coldata$egfr)),
+  identical(rownames(egfr_coldata), colnames(dds))
+)
+
+egfr_coldata$egfr_10 <- (
+  egfr_coldata$egfr - mean(egfr_coldata$egfr)
+) / 10
+
+egfr_coldata$diagnosis <- factor(
+  egfr_coldata$diagnosis,
+  levels = c("Control", "IgAN")
+)
+```
+
+```{r}
+# Create an unfitted dataset for the controlled comparison
+dds_sens_unadjusted <- DESeq2::DESeqDataSetFromMatrix(
+  countData = DESeq2::counts(dds, normalized = FALSE),
+  colData = egfr_coldata,
+  design = ~ diagnosis
+)
+
+DESeq2::sizeFactors(dds_sens_unadjusted) <-
+  DESeq2::sizeFactors(dds)
+
+# Copy before fitting, then add eGFR to the second model
+dds_sens_egfr <- dds_sens_unadjusted
+DESeq2::design(dds_sens_egfr) <- ~ egfr_10 + diagnosis
+
+# Disable automatic count replacement in both models
+dds_sens_unadjusted <- DESeq2::DESeq(
+  dds_sens_unadjusted,
+  minReplicatesForReplace = Inf
+)
+
+dds_sens_egfr <- DESeq2::DESeq(
+  dds_sens_egfr,
+  minReplicatesForReplace = Inf
+)
+```
+
+```{r}
+# Extract unshrunken diagnosis effects using identical settings
+res_sens_unadjusted <- DESeq2::results(
+  dds_sens_unadjusted,
+  contrast = c("diagnosis", "IgAN", "Control"),
+  alpha = 0.05,
+  cooksCutoff = FALSE,
+  independentFiltering = FALSE
+)
+
+res_sens_egfr <- DESeq2::results(
+  dds_sens_egfr,
+  contrast = c("diagnosis", "IgAN", "Control"),
+  alpha = 0.05,
+  cooksCutoff = FALSE,
+  independentFiltering = FALSE
+)
+
+# Check convergence
+table(
+  S4Vectors::mcols(dds_sens_unadjusted)$betaConv,
+  useNA = "ifany"
+)
+
+table(
+  S4Vectors::mcols(dds_sens_egfr)$betaConv,
+  useNA = "ifany"
+)
+
+summary(res_sens_unadjusted)
+summary(res_sens_egfr)
+
+DESeq2::plotDispEsts(dds_sens_unadjusted)
+DESeq2::plotDispEsts(dds_sens_egfr)
+```
+
+```{r}
+# Confirm matching inputs and result rows
+stopifnot(
+  identical(
+    rownames(dds_sens_unadjusted),
+    rownames(dds_sens_egfr)
+  ),
+  identical(
+    colnames(dds_sens_unadjusted),
+    colnames(dds_sens_egfr)
+  ),
+  identical(
+    DESeq2::counts(dds_sens_unadjusted),
+    DESeq2::counts(dds_sens_egfr)
+  ),
+  isTRUE(all.equal(
+    DESeq2::sizeFactors(dds_sens_unadjusted),
+    DESeq2::sizeFactors(dds_sens_egfr)
+  )),
+  identical(
+    rownames(res_sens_unadjusted),
+    rownames(dds_sens_unadjusted)
+  ),
+  identical(
+    rownames(res_sens_egfr),
+    rownames(dds_sens_egfr)
+  ),
+  !anyDuplicated(rownames(res_sens_unadjusted)),
+  !anyDuplicated(rownames(res_sens_egfr))
+)
+
+# Prepare the unshrunken results from each model
+unadjusted_table <- as.data.frame(res_sens_unadjusted) %>%
+  tibble::rownames_to_column("gene_id") %>%
+  dplyr::select(
+    gene_id,
+    lfc_unadjusted = log2FoldChange,
+    se_unadjusted = lfcSE,
+    padj_unadjusted = padj
+  )
+
+egfr_table <- as.data.frame(res_sens_egfr) %>%
+  tibble::rownames_to_column("gene_id") %>%
+  dplyr::select(
+    gene_id,
+    lfc_egfr = log2FoldChange,
+    se_egfr = lfcSE,
+    padj_egfr = padj
+  )
+
+# Compare diagnosis effects gene by gene
+model_comparison <- unadjusted_table %>%
+  dplyr::inner_join(egfr_table, by = "gene_id") %>%
+  dplyr::mutate(
+    lfc_change = lfc_egfr - lfc_unadjusted,
+    abs_lfc_change = abs(lfc_egfr) - abs(lfc_unadjusted),
+    direction_changed = sign(lfc_egfr) != sign(lfc_unadjusted),
+    se_change = se_egfr - se_unadjusted,
+    significance_status = dplyr::case_when(
+      is.na(padj_unadjusted) | is.na(padj_egfr) ~
+        "Not evaluable in both",
+      padj_unadjusted < 0.05 & padj_egfr < 0.05 ~
+        "Significant in both",
+      padj_unadjusted < 0.05 ~ "Unadjusted only",
+      padj_egfr < 0.05 ~ "eGFR-adjusted only",
+      TRUE ~ "Neither"
+    )
+  )
+
+# Check for unavailable adjusted p-values
+model_comparison %>%
+  dplyr::summarise(
+    missing_unadjusted = sum(is.na(padj_unadjusted)),
+    missing_egfr = sum(is.na(padj_egfr)),
+    different_missing_status = sum(
+      is.na(padj_unadjusted) != is.na(padj_egfr)
+    )
+  )
+
+# Count genes in each significance category
+model_comparison %>%
+  dplyr::count(significance_status, name = "number_of_genes")
+
+# Inspect the ten largest shifts in diagnosis effect
+model_comparison %>%
+  dplyr::arrange(dplyr::desc(abs(lfc_change))) %>%
+  dplyr::slice_head(n = 10) %>%
+  tibble::as_tibble() %>%
+  print(n = Inf, width = Inf)
+```
+
+```{r}
+# Keep genes with finite estimates in both models
+agreement_data <- model_comparison %>%
+  dplyr::filter(
+    is.finite(lfc_unadjusted),
+    is.finite(lfc_egfr)
+  )
+
+# Summarize agreement
+lfc_correlation <- cor(
+  agreement_data$lfc_unadjusted,
+  agreement_data$lfc_egfr,
+  method = "pearson"
+)
+
+median_lfc_difference <- median(
+  abs(agreement_data$lfc_egfr - agreement_data$lfc_unadjusted)
+)
+
+# Use the same range on both axes
+axis_limits <- range(
+  c(agreement_data$lfc_unadjusted, agreement_data$lfc_egfr)
+)
+
+# Draw nonsignificant genes first
+agreement_data <- agreement_data %>%
+  dplyr::mutate(
+    significance_status = factor(
+      significance_status,
+      levels = c(
+        "Neither",
+        "Not evaluable in both",
+        "Significant in both",
+        "Unadjusted only",
+        "eGFR-adjusted only"
+      )
+    )
+  ) %>%
+  dplyr::arrange(significance_status)
+
+IgAN_Control_lfc_agreement_plot <- ggplot(
+  agreement_data,
+  aes(x = lfc_unadjusted, y = lfc_egfr)
+) +
+  geom_hline(
+    yintercept = 0,
+    color = "grey85",
+    linewidth = 0.3
+  ) +
+  geom_vline(
+    xintercept = 0,
+    color = "grey85",
+    linewidth = 0.3
+  ) +
+  geom_abline(
+    intercept = 0,
+    slope = 1,
+    linetype = "dashed",
+    color = "black",
+    linewidth = 0.5
+  ) +
+  geom_point(
+    aes(color = significance_status),
+    size = 1.2,
+    alpha = 0.65
+  ) +
+  scale_color_manual(
+    values = c(
+      "Neither" = "grey75",
+      "Not evaluable in both" = "grey40",
+      "Significant in both" = "#0072B2",
+      "Unadjusted only" = "#D55E00",
+      "eGFR-adjusted only" = "#009E73"
+    )
+  ) +
+  coord_equal(
+    xlim = axis_limits,
+    ylim = axis_limits
+  ) +
+  labs(
+  x = "Unadjusted log2 fold change (IgAN / Control)",
+  y = "eGFR-adjusted log2 fold change (IgAN / Control)",
+  color = "Significance",
+  title = "Diagnosis effects before and after eGFR adjustment",
+  subtitle = sprintf(
+    paste0(
+      "Pearson r = %.3f; median absolute difference = %.3f",
+      " log2-fold-change units"
+    ),
+    lfc_correlation,
+    median_lfc_difference
+  ),
+  caption = paste(
+    "Unshrunken estimates; dashed line indicates identical estimates.",
+    "Significance: BH-adjusted p < 0.05.",
+    paste(
+      "Count replacement, Cook's-distance filtering, and independent",
+      "filtering disabled in both sensitivity models."
+    ),
+    sep = "\n"
+  )
+) +
+  theme_classic(base_size = 11, base_family = "sans") +
+  theme(
+    legend.position = "right",
+    axis.text = element_text(color = "black"),
+    plot.title = element_text(face = "bold"),
+    plot.caption = element_text(hjust = 0, size = 9)
+  ) +
+  guides(
+    color = guide_legend(
+      override.aes = list(size = 3, alpha = 1)
+    )
+  )
+
+IgAN_Control_lfc_agreement_plot
+```
+
+```{r}
+# Count genes in each significance category
+significance_counts <- model_comparison %>%
+  dplyr::count(
+    significance_status,
+    name = "number_of_genes"
+  )
+
+print(
+  tibble::as_tibble(significance_counts),
+  n = Inf,
+  width = Inf
+)
+
+# Print the agreement statistics without rounding
+agreement_summary <- tibble::tibble(
+  genes_plotted = nrow(agreement_data),
+  pearson_r = lfc_correlation,
+  median_absolute_difference = median_lfc_difference
+)
+
+print(agreement_summary, width = Inf)
+```
+
+```{r}
+# Add gene symbols without importing the shrunken estimates
+comparison_annotated <- model_comparison %>%
+  dplyr::left_join(
+    results_annotated %>%
+      dplyr::select(gene_id, gene_symbol),
+    by = "gene_id"
+  ) %>%
+  dplyr::relocate(gene_symbol, .after = gene_id)
+
+largest_changes <- comparison_annotated %>%
+  dplyr::filter(
+    is.finite(lfc_unadjusted),
+    is.finite(lfc_egfr)
+  ) %>%
+  dplyr::arrange(dplyr::desc(abs(lfc_change))) %>%
+  dplyr::slice_head(n = 10)
+
+print(
+  tibble::as_tibble(largest_changes),
+  n = Inf,
+  width = Inf
+)
+```
+
+```{r}
+# Preserve the original labelled-gene selection and order
+labelled_gene_comparison <- top_gene_table %>%
+  dplyr::select(gene_id, gene_symbol) %>%
+  dplyr::left_join(
+    model_comparison,
+    by = "gene_id"
+  )
+
+print(
+  tibble::as_tibble(labelled_gene_comparison),
+  n = Inf,
+  width = Inf
+)
+```
+
+```{r}
+significant_reversals <- comparison_annotated %>%
+  dplyr::filter(
+    significance_status == "Significant in both",
+    is.finite(lfc_unadjusted),
+    is.finite(lfc_egfr),
+    lfc_unadjusted * lfc_egfr < 0
+  ) %>%
+  dplyr::arrange(dplyr::desc(abs(lfc_change)))
+
+print(
+  tibble::as_tibble(significant_reversals),
+  n = Inf,
+  width = Inf
+)
+```
+
+```{r}
+# Start with primary results eligible for significance assessment
+enrichment_input <- as.data.frame(res) %>%
+  tibble::rownames_to_column("gene_id") %>%
+  dplyr::filter(is.finite(padj)) %>%
+  dplyr::mutate(
+    ensembl_id = sub("\\.[0-9]+$", "", gene_id),
+    direction = dplyr::case_when(
+      padj < 0.05 & log2FoldChange > 0 ~ "Higher in IgAN",
+      padj < 0.05 & log2FoldChange < 0 ~ "Lower in IgAN",
+      TRUE ~ "Other"
+    )
+  )
+
+# Retrieve every candidate mapping
+mapping_pairs <- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = unique(enrichment_input$ensembl_id),
+  keytype = "ENSEMBL",
+  columns = "ENTREZID"
+) %>%
+  dplyr::distinct(ENSEMBL, ENTREZID)
+
+# Keep one row per Ensembl ID and classify the mapping
+mapping_table <- mapping_pairs %>%
+  dplyr::group_by(ENSEMBL) %>%
+  dplyr::summarise(
+    candidates = list(unique(ENTREZID[!is.na(ENTREZID)])),
+    .groups = "drop"
+  ) %>%
+  dplyr::mutate(
+    n_entrez = lengths(candidates),
+    mapping_status = dplyr::case_when(
+      n_entrez == 0 ~ "Unmapped",
+      n_entrez == 1 ~ "Unique",
+      n_entrez > 1 ~ "Ambiguous"
+    ),
+    entrez_id = vapply(
+      candidates,
+      function(x) {
+        if (length(x) == 1) as.character(x) else NA_character_
+      },
+      character(1)
+    )
+  ) %>%
+  dplyr::rename(ensembl_id = ENSEMBL)
+
+# Apply the same mapping to every input gene
+enrichment_mapped <- enrichment_input %>%
+  dplyr::left_join(mapping_table, by = "ensembl_id")
+
+stopifnot(
+  nrow(enrichment_mapped) == nrow(enrichment_input),
+  !anyNA(enrichment_mapped$mapping_status)
+)
+
+enrichment_mapped %>%
+  dplyr::count(direction, mapping_status, name = "n_input_genes")
+```
+
+```{r}
+# Define the three lists before excluding mapping failures
+input_lists <- list(
+  Background = enrichment_mapped,
+  Higher = enrichment_mapped %>%
+    dplyr::filter(direction == "Higher in IgAN"),
+  Lower = enrichment_mapped %>%
+    dplyr::filter(direction == "Lower in IgAN")
+)
+
+mapping_summary <- dplyr::bind_rows(
+  lapply(names(input_lists), function(list_name) {
+    x <- input_lists[[list_name]]
+    mapped_ids <- x$entrez_id[x$mapping_status == "Unique"]
+
+    tibble::tibble(
+      gene_list = list_name,
+      input_gene_rows = nrow(x),
+      unmapped_rows = sum(x$mapping_status == "Unmapped"),
+      ambiguous_rows = sum(x$mapping_status == "Ambiguous"),
+      uniquely_mapped_rows = length(mapped_ids),
+      unique_entrez_ids = length(unique(mapped_ids)),
+      duplicate_entrez_entries = length(mapped_ids) -
+        length(unique(mapped_ids))
+    )
+  })
+)
+
+print(mapping_summary, n = Inf, width = Inf)
+
+# Retain mapping failures for inspection
+unmapped_genes <- enrichment_mapped %>%
+  dplyr::filter(mapping_status == "Unmapped")
+
+ambiguous_genes <- enrichment_mapped %>%
+  dplyr::filter(mapping_status == "Ambiguous") %>%
+  dplyr::select(
+    gene_id, ensembl_id, direction, candidates
+  )
+
+print(tibble::as_tibble(ambiguous_genes), n = Inf, width = Inf)
+```
+
+```{r}
+# Retain only unambiguous Ensembl-to-Entrez mappings
+mapped_unique <- enrichment_mapped %>%
+  dplyr::filter(mapping_status == "Unique")
+
+background_genes <- unique(mapped_unique$entrez_id)
+
+up_before_conflicts <- mapped_unique %>%
+  dplyr::filter(direction == "Higher in IgAN") %>%
+  dplyr::pull(entrez_id) %>%
+  unique()
+
+down_before_conflicts <- mapped_unique %>%
+  dplyr::filter(direction == "Lower in IgAN") %>%
+  dplyr::pull(entrez_id) %>%
+  unique()
+
+# Find Entrez IDs represented in both significant directions
+conflicting_entrez <- intersect(
+  up_before_conflicts,
+  down_before_conflicts
+)
+
+# Show all contributing input rows for these IDs
+direction_conflicts <- mapped_unique %>%
+  dplyr::filter(entrez_id %in% conflicting_entrez) %>%
+  dplyr::select(
+    entrez_id, gene_id, ensembl_id,
+    direction, log2FoldChange, padj
+  ) %>%
+  dplyr::arrange(entrez_id, direction)
+
+print(
+  tibble::as_tibble(direction_conflicts),
+  n = Inf,
+  width = Inf
+)
+
+# Exclude conflicting IDs from both directional lists
+up_genes <- setdiff(up_before_conflicts, conflicting_entrez)
+down_genes <- setdiff(down_before_conflicts, conflicting_entrez)
+
+# Verify the final lists
+stopifnot(
+  !anyNA(background_genes),
+  !anyNA(up_genes),
+  !anyNA(down_genes),
+  !anyDuplicated(background_genes),
+  !anyDuplicated(up_genes),
+  !anyDuplicated(down_genes),
+  all(up_genes %in% background_genes),
+  all(down_genes %in% background_genes),
+  length(intersect(up_genes, down_genes)) == 0
+)
+
+final_list_counts <- tibble::tibble(
+  gene_list = c("Background", "Higher in IgAN", "Lower in IgAN"),
+  unique_entrez_before_conflict_resolution = c(
+    length(background_genes),
+    length(up_before_conflicts),
+    length(down_before_conflicts)
+  ),
+  conflicting_ids_removed = c(
+    0L,
+    length(conflicting_entrez),
+    length(conflicting_entrez)
+  ),
+  final_unique_entrez_ids = c(
+    length(background_genes),
+    length(up_genes),
+    length(down_genes)
+  )
+)
+
+print(final_list_counts, n = Inf, width = Inf)
+
+# Record the annotation version
+packageVersion("org.Hs.eg.db")
+```
+
+```{r}
+# Apply the same GO Biological Process settings to each gene list
+run_go_bp <- function(gene_ids) {
+  clusterProfiler::enrichGO(
+    gene = gene_ids,
+    universe = background_genes,
+    OrgDb = org.Hs.eg.db,
+    keyType = "ENTREZID",
+    ont = "BP",
+    pAdjustMethod = "BH",
+    pvalueCutoff = 1,
+    qvalueCutoff = 1,
+    minGSSize = 10,
+    maxGSSize = 500,
+    readable = FALSE
+  )
+}
+
+go_up <- run_go_bp(up_genes)
+go_down <- run_go_bp(down_genes)
+```
+
+```{r}
+# Convert enrichment results to tables
+go_up_table <- as.data.frame(go_up) %>%
+  dplyr::arrange(p.adjust)
+
+go_down_table <- as.data.frame(go_down) %>%
+  dplyr::arrange(p.adjust)
+
+# Apply the planned significance criterion
+go_up_significant <- go_up_table %>%
+  dplyr::filter(is.finite(p.adjust), p.adjust < 0.05)
+
+go_down_significant <- go_down_table %>%
+  dplyr::filter(is.finite(p.adjust), p.adjust < 0.05)
+
+# Summarize the returned and significant terms
+go_summary <- tibble::tibble(
+  direction = c("Higher in IgAN", "Lower in IgAN"),
+  submitted_genes = c(length(up_genes), length(down_genes)),
+  returned_terms = c(nrow(go_up_table), nrow(go_down_table)),
+  significant_terms = c(
+    nrow(go_up_significant),
+    nrow(go_down_significant)
+  )
+)
+
+print(go_summary, width = Inf)
+```
+
+```{r}
+go_up_significant %>%
+  dplyr::select(
+    ID, Description, GeneRatio, BgRatio,
+    pvalue, p.adjust, Count, geneID
+  ) %>%
+  dplyr::slice_head(n = 10) %>%
+  tibble::as_tibble() %>%
+  print(n = Inf, width = Inf)
+
+go_down_significant %>%
+  dplyr::select(
+    ID, Description, GeneRatio, BgRatio,
+    pvalue, p.adjust, Count, geneID
+  ) %>%
+  dplyr::slice_head(n = 10) %>%
+  tibble::as_tibble() %>%
+  print(n = Inf, width = Inf)
+
+packageVersion("clusterProfiler")
+packageVersion("org.Hs.eg.db")
+packageVersion("GO.db")
+```
+
+```{r}
+# Inspect the five leading terms in each direction
+leading_go_terms <- dplyr::bind_rows(
+  go_up_significant %>%
+    dplyr::slice_head(n = 5) %>%
+    dplyr::mutate(direction = "Higher in IgAN"),
+
+  go_down_significant %>%
+    dplyr::slice_head(n = 5) %>%
+    dplyr::mutate(direction = "Lower in IgAN")
+)
+
+# Each geneID entry contains Entrez IDs separated by "/"
+go_contributing_genes <- leading_go_terms %>%
+  dplyr::select(direction, ID, Description, p.adjust, geneID) %>%
+  tidyr::separate_rows(geneID, sep = "/") %>%
+  dplyr::rename(entrez_id = geneID) %>%
+  dplyr::distinct()
+
+# Add gene symbols for easier reading
+go_gene_symbols <- AnnotationDbi::mapIds(
+  org.Hs.eg.db,
+  keys = unique(go_contributing_genes$entrez_id),
+  keytype = "ENTREZID",
+  column = "SYMBOL",
+  multiVals = "asNA"
+)
+
+go_contributing_genes <- go_contributing_genes %>%
+  dplyr::mutate(
+    gene_symbol = unname(go_gene_symbols[entrez_id])
+  )
+
+# Make a compact table with the contributing genes for each term
+go_gene_details <- go_contributing_genes %>%
+  dplyr::mutate(
+    gene_label = dplyr::coalesce(gene_symbol, entrez_id)
+  ) %>%
+  dplyr::group_by(direction, ID, Description, p.adjust) %>%
+  dplyr::summarise(
+    contributing_genes = dplyr::n_distinct(entrez_id),
+    genes = paste(sort(unique(gene_label)), collapse = ", "),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(direction, p.adjust)
+
+print(go_gene_details, n = Inf, width = Inf)
+```
+
+```{r}
+# Simplify significant terms in a separate copy of each result
+simplify_go_bp <- function(go_result, significant_table) {
+  presentation_result <- go_result
+
+  # Only significant terms enter the presentation selection
+  presentation_result@result <- as.data.frame(significant_table)
+
+  if (nrow(significant_table) < 2) {
+    return(presentation_result)
+  }
+
+  clusterProfiler::simplify(
+    presentation_result,
+    cutoff = 0.7,
+    by = "p.adjust",
+    select_fun = min,
+    measure = "Wang"
+  )
+}
+
+go_up_simplified <- simplify_go_bp(go_up, go_up_significant)
+go_down_simplified <- simplify_go_bp(go_down, go_down_significant)
+
+# Keep all retained representative terms
+go_up_representative <- as.data.frame(go_up_simplified) %>%
+  dplyr::arrange(p.adjust)
+
+go_down_representative <- as.data.frame(go_down_simplified) %>%
+  dplyr::arrange(p.adjust)
+
+# Check how many terms remain for presentation
+redundancy_summary <- tibble::tibble(
+  direction = c("Higher in IgAN", "Lower in IgAN"),
+  significant_terms = c(
+    nrow(go_up_significant),
+    nrow(go_down_significant)
+  ),
+  representative_terms = c(
+    nrow(go_up_representative),
+    nrow(go_down_representative)
+  )
+)
+
+print(redundancy_summary, width = Inf)
+
+# Select up to eight representative terms per direction for the figure
+go_plot_terms <- dplyr::bind_rows(
+  go_up_representative %>%
+    dplyr::slice_head(n = 8) %>%
+    dplyr::mutate(direction = "Higher in IgAN"),
+
+  go_down_representative %>%
+    dplyr::slice_head(n = 8) %>%
+    dplyr::mutate(direction = "Lower in IgAN")
+)
+
+go_plot_terms %>%
+  dplyr::select(direction, ID, Description, p.adjust, Count) %>%
+  tibble::as_tibble() %>%
+  print(n = Inf, width = Inf)
+```
+
+```{r}
+# Extract the contributing genes for all 16 selected terms
+selected_go_genes <- go_plot_terms %>%
+  dplyr::select(
+    direction, ID, Description, p.adjust, Count, geneID
+  ) %>%
+  tidyr::separate_rows(geneID, sep = "/") %>%
+  dplyr::rename(entrez_id = geneID) %>%
+  dplyr::distinct()
+
+# Add symbols without changing the Entrez IDs used in enrichment
+selected_go_symbols <- AnnotationDbi::mapIds(
+  org.Hs.eg.db,
+  keys = unique(selected_go_genes$entrez_id),
+  keytype = "ENTREZID",
+  column = "SYMBOL",
+  multiVals = "asNA"
+)
+
+selected_go_genes <- selected_go_genes %>%
+  dplyr::mutate(
+    gene_symbol = unname(selected_go_symbols[entrez_id])
+  )
+
+# Confirm that the extracted genes match each term's reported count
+selected_go_check <- selected_go_genes %>%
+  dplyr::group_by(direction, ID, Description, Count) %>%
+  dplyr::summarise(
+    extracted_genes = dplyr::n_distinct(entrez_id),
+    .groups = "drop"
+  )
+
+stopifnot(
+  all(selected_go_check$Count == selected_go_check$extracted_genes)
+)
+
+print(selected_go_check, n = Inf, width = Inf)
+
+# Inspect every gene contributing to the myoblast-fusion term
+myoblast_genes <- selected_go_genes %>%
+  dplyr::filter(ID == "GO:1901740") %>%
+  dplyr::select(entrez_id, gene_symbol) %>%
+  dplyr::distinct() %>%
+  dplyr::arrange(gene_symbol)
+
+print(tibble::as_tibble(myoblast_genes), n = Inf, width = Inf)
+```
+
+```{r}
+# Find other selected lower-expression terms sharing these genes
+myoblast_overlap <- selected_go_genes %>%
+  dplyr::filter(
+    direction == "Lower in IgAN",
+    ID != "GO:1901740",
+    entrez_id %in% myoblast_genes$entrez_id
+  ) %>%
+  dplyr::mutate(
+    gene_label = dplyr::coalesce(gene_symbol, entrez_id)
+  ) %>%
+  dplyr::group_by(ID, Description) %>%
+  dplyr::summarise(
+    shared_genes = dplyr::n_distinct(entrez_id),
+    genes = paste(sort(unique(gene_label)), collapse = ", "),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(dplyr::desc(shared_genes))
+
+print(myoblast_overlap, n = Inf, width = Inf)
+
+# Confirm that the target term was extracted successfully
+nrow(myoblast_genes)
+
+print(
+  tibble::as_tibble(myoblast_genes),
+  n = Inf,
+  width = Inf
+)
+```
+
+```{r}
+# Check the GO annotation evidence for these 37 genes
+myoblast_annotation <- AnnotationDbi::select(
+  org.Hs.eg.db,
+  keys = myoblast_genes$entrez_id,
+  keytype = "ENTREZID",
+  columns = c("SYMBOL", "GOALL", "EVIDENCEALL", "ONTOLOGYALL")
+) %>%
+  dplyr::filter(GOALL == "GO:1901740") %>%
+  dplyr::distinct() %>%
+  dplyr::arrange(SYMBOL)
+
+print(
+  tibble::as_tibble(myoblast_annotation),
+  n = Inf,
+  width = Inf
+)
+
+# Summarize the evidence codes
+myoblast_annotation %>%
+  dplyr::group_by(EVIDENCEALL) %>%
+  dplyr::summarise(
+    number_of_genes = dplyr::n_distinct(ENTREZID),
+    .groups = "drop"
+  )
+```
+
+```{r}
+# Convert GeneRatio from a fraction into a number
+go_figure_data <- go_plot_terms %>%
+  dplyr::mutate(
+    gene_ratio = vapply(
+      strsplit(as.character(GeneRatio), "/", fixed = TRUE),
+      function(x) as.numeric(x[1]) / as.numeric(x[2]),
+      numeric(1)
+    ),
+    significance_score = -log10(
+  pmax(p.adjust, .Machine$double.xmin)
+),
+    direction = factor(
+      direction,
+      levels = c("Higher in IgAN", "Lower in IgAN")
+    ),
+    term_key = paste(direction, ID, sep = "__")
+  ) %>%
+  dplyr::arrange(direction, p.adjust)
+
+# Put the most significant term at the top of each panel
+go_figure_data$term_key <- factor(
+  go_figure_data$term_key,
+  levels = rev(go_figure_data$term_key)
+)
+
+# Wrap long term names
+term_labels <- setNames(
+  vapply(
+    go_figure_data$Description,
+    function(x) paste(strwrap(x, width = 40), collapse = "\n"),
+    character(1)
+  ),
+  as.character(go_figure_data$term_key)
+)
+
+GO_final <- ggplot(
+  go_figure_data,
+  aes(
+    x = gene_ratio,
+    y = term_key,
+    size = Count,
+    color = significance_score
+  )
+) +
+  geom_point(alpha = 0.95) +
+  facet_grid(
+    direction ~ .,
+    scales = "free_y",
+    space = "free_y"
+  ) +
+  scale_y_discrete(labels = term_labels) +
+  scale_x_continuous(
+    labels = scales::label_percent(accuracy = 1),
+    expand = expansion(mult = c(0.08, 0.12))
+  ) +
+  scale_size_area(
+    max_size = 7,
+    name = "Contributing genes"
+  ) +
+  scale_color_viridis_c(
+    option = "C",
+    end = 0.9,
+    name = expression(-log[10]("BH-adjusted p"))
+  ) +
+  labs(
+    title = "GO Biological Process enrichment",
+    subtitle = "IgAN versus Control",
+    x = "Percentage of GO BP-annotated input genes",
+    y = NULL,
+    caption = paste(
+  "Eight representative terms per direction; BH-adjusted p < 0.05.",
+  "Redundancy reduced using Wang similarity (cutoff 0.7).",
+  "'Negative regulation of myoblast fusion' includes 37 contributing",
+  "ribosomal genes. Neither enrichment among lower-expression genes",
+  "nor the term's regulatory wording establishes increased myoblast",
+  "fusion in kidney tissue.",
+  sep = "\n"
+)
+  ) +
+  theme_bw(base_size = 11, base_family = "sans") +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_line(
+      color = "grey90",
+      linewidth = 0.3
+    ),
+    panel.border = element_rect(
+      color = "grey40",
+      linewidth = 0.4
+    ),
+    strip.background = element_rect(
+      fill = "grey95",
+      color = NA
+    ),
+    strip.text = element_text(face = "bold", size = 11),
+    axis.text = element_text(color = "black"),
+    axis.text.y = element_text(size = 10),
+    axis.ticks.y = element_blank(),
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9),
+    panel.spacing.y = grid::unit(0.6, "lines"),
+    plot.title = element_text(face = "bold", size = 13),
+    plot.subtitle = element_text(size = 11),
+    plot.caption = element_text(
+      hjust = 0,
+      size = 9,
+      margin = margin(t = 10)
+    ),
+    plot.caption.position = "plot",
+    plot.margin = margin(10, 15, 10, 10)
+  )
+
+GO_final
+```
+
+```{r}
+# Summarize evidence categories for GO:1901740
+myoblast_annotation %>%
+  dplyr::group_by(EVIDENCEALL) %>%
+  dplyr::summarise(
+    number_of_genes = dplyr::n_distinct(ENTREZID),
+    .groups = "drop"
+  ) %>%
+  print(n = Inf)
+
+# Confirm that annotations were found for all 37 genes
+dplyr::n_distinct(myoblast_annotation$ENTREZID)
+```
+
+## Save analysis outputs
+
+Run this section after all preceding analysis chunks. Outputs are saved under
+`results` in the project directory. Re-running it replaces files with the same
+names. Inspect the exported figures at their intended report size before use.
+
+```{r}
+#| label: export-tables
+results_dir <- file.path(project_dir, "results")
+tables_dir <- file.path(results_dir, "tables")
+figures_dir <- file.path(results_dir, "figures")
+objects_dir <- file.path(results_dir, "objects")
+for (output_dir in c(results_dir, tables_dir, figures_dir, objects_dir)) {
+  dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+}
+stopifnot(all(dir.exists(c(results_dir, tables_dir, figures_dir, objects_dir))))
+
+# Keep gene IDs as explicit columns; primary Wald tests and shrunken effects
+# are exported separately so the type of estimate is clear.
+primary_results <- as.data.frame(res) %>%
+  tibble::rownames_to_column("gene_id")
+
+filtering_summary <- data.frame(
+  genes_before = nrow(igan_control_counts),
+  genes_retained = sum(keep_genes),
+  genes_removed = sum(!keep_genes),
+  minimum_count = 10,
+  minimum_samples = min_samples
+)
+replacement_summary <- data.frame(
+  changed_counts = sum(counts_changed),
+  genes_with_changed_counts = sum(rowSums(counts_changed) > 0),
+  samples_with_changed_counts = sum(colSums(counts_changed) > 0)
+)
+replacement_by_gene <- data.frame(
+  gene_id = rownames(counts_changed),
+  changed_counts = rowSums(counts_changed)
+)
+myoblast_evidence_summary <- myoblast_annotation %>%
+  dplyr::group_by(EVIDENCEALL) %>%
+  dplyr::summarise(
+    number_of_genes = dplyr::n_distinct(ENTREZID), .groups = "drop"
+  )
+go_input_ids <- dplyr::bind_rows(
+  data.frame(gene_list = "Background", entrez_id = background_genes),
+  data.frame(gene_list = "Higher in IgAN", entrez_id = up_genes),
+  data.frame(gene_list = "Lower in IgAN", entrez_id = down_genes)
+)
+
+output_tables <- list(
+  sample_metadata_all = sample_info,
+  sample_metadata_primary = igan_control,
+  sample_qc = sample_qc,
+  concentration_qc = concentration_qc,
+  normalization_qc = normalization_qc,
+  gene_filtering_summary = filtering_summary,
+  pca_coordinates = pca_data,
+  pca_variance = data.frame(component = c("PC1", "PC2"), percent = percent_variance),
+  primary_DE_unshrunken = primary_results,
+  primary_DE_apeglm_annotated = results_annotated,
+  volcano_source_data = volcano_data,
+  labelled_genes = top_gene_table,
+  labelled_genes_group_counts = gene_inspection,
+  labelled_genes_sample_counts = gene_plot_data,
+  labelled_genes_cooks = top_gene_cooks,
+  primary_count_replacement_summary = replacement_summary,
+  primary_count_replacement_by_gene = replacement_by_gene,
+  egfr_summary = egfr_summary,
+  egfr_sample_values = egfr_metadata,
+  sensitivity_unadjusted = tibble::rownames_to_column(as.data.frame(res_sens_unadjusted), "gene_id"),
+  sensitivity_egfr_adjusted = tibble::rownames_to_column(as.data.frame(res_sens_egfr), "gene_id"),
+  sensitivity_comparison = comparison_annotated,
+  sensitivity_significance_counts = significance_counts,
+  sensitivity_agreement = agreement_summary,
+  sensitivity_largest_changes = largest_changes,
+  sensitivity_labelled_genes = labelled_gene_comparison,
+  sensitivity_significant_reversals = significant_reversals,
+  go_mapping_summary = mapping_summary,
+  go_mapping_all_genes = enrichment_mapped,
+  go_unmapped_genes = unmapped_genes,
+  go_ambiguous_genes = ambiguous_genes,
+  go_direction_conflicts = direction_conflicts,
+  go_final_list_counts = final_list_counts,
+  go_submitted_entrez_ids = go_input_ids,
+  go_enrichment_summary = go_summary,
+  go_higher_all = go_up_table,
+  go_lower_all = go_down_table,
+  go_higher_significant = go_up_significant,
+  go_lower_significant = go_down_significant,
+  go_higher_representative = go_up_representative,
+  go_lower_representative = go_down_representative,
+  go_redundancy_summary = redundancy_summary,
+  go_selected_terms = go_plot_terms,
+  go_figure_source_data = go_figure_data,
+  go_leading_term_contributors = go_contributing_genes,
+  go_selected_term_contributors = selected_go_genes,
+  go_selected_term_count_check = selected_go_check,
+  go_myoblast_genes = myoblast_genes,
+  go_myoblast_overlap = myoblast_overlap,
+  go_myoblast_annotation = myoblast_annotation,
+  go_myoblast_evidence_summary = myoblast_evidence_summary
+)
+
+for (table_name in names(output_tables)) {
+  export_table <- as.data.frame(output_tables[[table_name]])
+  # Candidate Entrez mappings are list columns. Preserve all candidates in CSV
+  # using semicolons; the RDS copy below retains their original structure.
+  list_columns <- vapply(export_table, is.list, logical(1))
+  export_table[list_columns] <- lapply(export_table[list_columns], function(column) {
+    vapply(column, function(values) paste(values, collapse = ";"), character(1))
+  })
+  utils::write.csv(
+    export_table, file.path(tables_dir, paste0(table_name, ".csv")),
+    row.names = FALSE, na = "NA", fileEncoding = "UTF-8"
+  )
+}
+```
+
+```{r}
+#| label: export-figures
+# Explicit plot objects avoid accidentally exporting the last displayed plot.
+output_plots <- list(
+  library_size = IgAN_Control_Library_Plot,
+  gene_detection = IgAN_Control_detection_plot,
+  pca = IgAN_Control_PCA_plot,
+  pca_flagged_samples = IgAN_Control_PCA_plot_check,
+  volcano_labelled = IgAN_Control_volcano_Plot_labeled,
+  labelled_gene_counts = IgAN_Control_gene_counts_plot,
+  egfr_distribution = IgAN_Control_egfr_plot,
+  sensitivity_lfc_agreement = IgAN_Control_lfc_agreement_plot,
+  go_biological_process = GO_final
+)
+figure_sizes <- data.frame(
+  figure = names(output_plots),
+  width_inches = c(8, 8, 8, 8, 11, 14, 7, 12, 12),
+  height_inches = c(5, 5, 6, 6, 7, 7, 5, 7, 11)
+)
+for (i in seq_len(nrow(figure_sizes))) {
+  figure_name <- figure_sizes$figure[i]
+  for (extension in c("pdf", "png")) {
+    ggplot2::ggsave(
+      filename = file.path(figures_dir, paste0(figure_name, ".", extension)),
+      plot = output_plots[[figure_name]],
+      width = figure_sizes$width_inches[i],
+      height = figure_sizes$height_inches[i], units = "in",
+      device = if (extension == "pdf") grDevices::cairo_pdf else "png",
+      dpi = 300, bg = "white"
+    )
+  }
+}
+utils::write.csv(figure_sizes, file.path(tables_dir, "figure_export_dimensions.csv"), row.names = FALSE)
+
+# DESeq2 diagnostics use base graphics, so draw them inside an output device.
+save_diagnostic <- function(name, draw_plot) {
+  for (extension in c("pdf", "png")) {
+    filename <- file.path(figures_dir, paste0(name, ".", extension))
+    if (extension == "pdf") {
+      grDevices::cairo_pdf(filename, width = 7, height = 5)
+    } else {
+      grDevices::png(filename, width = 7, height = 5, units = "in", res = 300)
+    }
+    tryCatch(draw_plot(), finally = grDevices::dev.off())
+  }
+}
+save_diagnostic("primary_dispersion", function() DESeq2::plotDispEsts(dds))
+save_diagnostic("sensitivity_unadjusted_dispersion", function() DESeq2::plotDispEsts(dds_sens_unadjusted))
+save_diagnostic("sensitivity_egfr_dispersion", function() DESeq2::plotDispEsts(dds_sens_egfr))
+save_diagnostic("primary_raw_pvalues", function() {
+  hist(res$pvalue, breaks = 50, main = "Raw p-values", xlab = "p-value")
+})
+save_diagnostic("ma_unshrunken", function() {
+  DESeq2::plotMA(res, alpha = 0.05, ylim = c(-5, 5), main = "Before shrinkage")
+})
+save_diagnostic("ma_apeglm", function() {
+  DESeq2::plotMA(res_shrunk, alpha = 0.05, ylim = c(-5, 5), main = "After shrinkage (apeglm)")
+})
+```
+
+```{r}
+#| label: export-analysis-objects
+# Preserve model metadata, assays, annotation mappings, and enrichment objects.
+saveRDS(list(
+  primary = dds, vst = vsd,
+  sensitivity_unadjusted = dds_sens_unadjusted,
+  sensitivity_egfr = dds_sens_egfr,
+  primary_results = res, primary_shrunken = res_shrunk,
+  sensitivity_unadjusted_results = res_sens_unadjusted,
+  sensitivity_egfr_results = res_sens_egfr
+), file.path(objects_dir, "deseq2_analysis.rds"))
+saveRDS(list(
+  higher = go_up, lower = go_down,
+  higher_simplified = go_up_simplified, lower_simplified = go_down_simplified,
+  mapping = enrichment_mapped,
+  background = background_genes, higher_ids = up_genes, lower_ids = down_genes
+), file.path(objects_dir, "go_analysis.rds"))
+saveRDS(output_tables, file.path(objects_dir, "analysis_tables.rds"))
+saveRDS(output_plots, file.path(objects_dir, "ggplot_figures.rds"))
+writeLines(capture.output(sessionInfo()), file.path(results_dir, "sessionInfo.txt"))
+writeLines(c(
+  "BE5350 analysis outputs",
+  paste("Exported:", format(Sys.time(), tz = "UTC", usetz = TRUE)),
+  "tables/: CSV results, QC summaries, mappings, and figure source data.",
+  "figures/: PDF and 300-dpi PNG figures; inspect layout before report use.",
+  "objects/: RDS models, enrichment objects, tables, and ggplot objects.",
+  "Primary unshrunken Wald-test results and apeglm estimates are separate files.",
+  "Sensitivity results use the controlled pair with replacement and filtering disabled.",
+  "GO all-term and significant tables are preserved separately from simplified terms.",
+  "CSV mapping candidates are semicolon-separated; RDS retains list columns.",
+  "Re-running exports overwrites files with the same names."
+), file.path(results_dir, "README.txt"))
+message("Analysis outputs saved to: ", normalizePath(results_dir, winslash = "/"))
+```
